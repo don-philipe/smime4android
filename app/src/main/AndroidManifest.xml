@@ -15,6 +15,12 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:mimeType="multipart/signed" />
+                <data android:mimeType="application/pkcs7-mime" />
+                <category android:name="android.intent.category.OPENABLE" />
+            </intent-filter>
         </activity>
     </application>
 
