@@ -20,10 +20,16 @@ public class S4A extends ActionBarActivity {
         Intent intent = getIntent();
         Uri data = intent.getData();
 
-        TextView textview = (TextView) findViewById(R.id.mailtext);
+        TextView sender = (TextView) findViewById(R.id.mailview_from_text);
+        TextView subject = (TextView) findViewById(R.id.mailview_subject_text);
+        TextView recipient = (TextView) findViewById(R.id.mailview_to_text);
+        TextView content = (TextView) findViewById(R.id.mailview_content);
         //TODO prüfen:
         //if (intent.getType().equals("application/pkcs7-mime")) {
-            textview.setText(DecryptMail.decrypt(data));
+        sender.setText("Mickey Mouse");
+        subject.setText("No Subject");
+        recipient.setText("Goofy");
+            content.setText(DecryptMail.decrypt(data));
         //}
     }
 
