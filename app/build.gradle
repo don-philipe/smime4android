@@ -20,12 +20,16 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
     }
+    packagingOptions {
+        exclude 'META-INF/LICENSE.txt'
+    }
 }
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'org.bouncycastle:bcmail-jdk15on:1.52'
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile 'javax.mail:javax.mail-api:1.5.4'
+    androidTestCompile 'junit:junit:4.12'
 }
 
 repositories {

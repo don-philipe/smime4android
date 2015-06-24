@@ -58,7 +58,7 @@ public class DecryptMail {
         SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
 
         Properties props = System.getProperties();
-        Session session = Session.getDefaultInstance(props, null);
+        Session session = Session.getDefaultInstance(props);
 
         SMIMEEnveloped m = null;
         MimeMessage msg = null;
