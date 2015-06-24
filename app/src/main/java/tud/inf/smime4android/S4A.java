@@ -8,6 +8,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+
 
 public class S4A extends ActionBarActivity {
 
@@ -23,7 +26,9 @@ public class S4A extends ActionBarActivity {
         TextView textview = (TextView) findViewById(R.id.mailtext);
         //TODO prüfen:
         //if (intent.getType().equals("application/pkcs7-mime")) {
-            textview.setText(DecryptMail.decrypt(data));
+            //TODO: ask for password
+            String password = "password";
+            textview.setText(DecryptMail.decrypt(data, password.toCharArray()));
         //}
     }
 
