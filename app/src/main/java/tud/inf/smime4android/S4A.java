@@ -19,6 +19,7 @@ public class S4A extends ActionBarActivity {
         // Get the intent that started this activity
         Intent intent = getIntent();
         Uri data = intent.getData();
+        String type = intent.getType();
 
         TextView sender = (TextView) findViewById(R.id.mailview_from_text);
         TextView subject = (TextView) findViewById(R.id.mailview_subject_text);
@@ -29,7 +30,9 @@ public class S4A extends ActionBarActivity {
         sender.setText("Mickey Mouse");
         subject.setText("No Subject");
         recipient.setText("Goofy");
-            content.setText(DecryptMail.decrypt(data));
+            content.setText(DecryptMail.decrypt(data)
+                    +"\nType:"+type
+                    +"\nIntent:"+intent.toString());
         //}
     }
 

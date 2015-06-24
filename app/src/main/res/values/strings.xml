@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">smime4android</string>
 
+    <string name="intent_decrypt_file">Datei entschlüsseln mit smime4android</string>
+
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="mailview_from">From:</string>
