@@ -33,7 +33,8 @@ public class S4A extends ActionBarActivity {
         if(intent.getData()!=null) {
             content.setText(DecryptMail.decrypt(data)
                     + "\nType:" + type
-                    + "\nIntent:" + intent.toString());
+                    + "\nIntent:" + intent.toString()
+                    + "\n"+ intent.getData().toString());
         }
         //}
     }
