@@ -30,9 +30,11 @@ public class S4A extends ActionBarActivity {
         sender.setText("Mickey Mouse");
         subject.setText("No Subject");
         recipient.setText("Goofy");
+        if(intent.getData()!=null) {
             content.setText(DecryptMail.decrypt(data)
-                    +"\nType:"+type
-                    +"\nIntent:"+intent.toString());
+                    + "\nType:" + type
+                    + "\nIntent:" + intent.toString());
+        }
         //}
     }
 
