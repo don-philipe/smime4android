@@ -19,7 +19,54 @@
                 <action android:name="android.intent.action.VIEW" />
                 <data android:mimeType="multipart/signed" />
                 <data android:mimeType="application/pkcs7-mime" />
+                <data android:mimeType="application/pkc7-signature" />
                 <category android:name="android.intent.category.OPENABLE" />
+            </intent-filter>
+
+            <!-- DECRYPT_DATA with data Uri -->
+            <intent-filter>
+                <action android:name="org.sufficientlysecure.keychain.action.DECRYPT_DATA" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+            </intent-filter>
+
+            <intent-filter android:label="@string/intent_decrypt_file">
+            <action android:name="android.intent.action.VIEW" />
+
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+
+            <data android:host="*" />
+            <data android:scheme="file" />
+            <data android:scheme="content" />
+
+                <data android:mimeType="*/*" />
+
+                <!-- Signatur -->
+            <data android:pathPattern=".*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7s" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7s" />
+            <!-- Verschlüsselte Nachricht -->
+            <data android:pathPattern=".*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7m" />
+            <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p7m" />
             </intent-filter>
         </activity>
     </application>

@@ -22,13 +22,22 @@ public class S4A extends ActionBarActivity {
         // Get the intent that started this activity
         Intent intent = getIntent();
         Uri data = intent.getData();
+        String type = intent.getType();
 
-        TextView textview = (TextView) findViewById(R.id.mailtext);
+        TextView sender = (TextView) findViewById(R.id.mailview_from_text);
+        TextView subject = (TextView) findViewById(R.id.mailview_subject_text);
+        TextView recipient = (TextView) findViewById(R.id.mailview_to_text);
+        TextView content = (TextView) findViewById(R.id.mailview_content);
         //TODO prüfen:
         //if (intent.getType().equals("application/pkcs7-mime")) {
             //TODO: ask for password
             String password = "password";
-            textview.setText(DecryptMail.decrypt(data, password.toCharArray()));
+            sender.setText("Mickey Mouse");
+            subject.setText("No Subject");
+            recipient.setText("Goofy");
+            content.setText(DecryptMail.decrypt(data)
+                    +"\nType:"+type
+                    +"\nIntent:"+intent.toString(), password.toCharArray()));
         //}
     }
 
