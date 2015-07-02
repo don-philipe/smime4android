@@ -30,6 +30,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.2.0'
     androidTestCompile 'junit:junit:4.12'
     compile 'com.sun.mail:javax.mail:1.5.4'
+    compile 'com.android.support:support-v4:22.2.0'
 }
 
 repositories {

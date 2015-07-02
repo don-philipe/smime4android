@@ -32,21 +32,24 @@ public class S4A extends ActionBarActivity {
         TextView content = (TextView) findViewById(R.id.mailview_content);
         //TODO prüfen:
         //if (intent.getType().equals("application/pkcs7-mime")) {
-            //TODO: ask for password
-            String password = "password";
-            sender.setText("Mickey Mouse");
-            subject.setText("No Subject");
-            recipient.setText("Goofy");
+        //TODO: ask for password
+        String password = "password";
+        sender.setText("Mickey Mouse");
+        subject.setText("No Subject");
+        recipient.setText("Goofy");
+        if(intent.getData()!=null) {
             content.setText(DecryptMail.decrypt(data, password.toCharArray())
-                    +"\nType:"+type
-                    +"\nIntent:"+intent.toString());
+                    + "\nType:" + type
+                    + "\nIntent:" + intent.toString()
+                    + "\n" + intent.getData().toString());
+        }
         //}
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_s4, menu);
+        getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
