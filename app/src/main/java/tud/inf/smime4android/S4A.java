@@ -24,6 +24,8 @@ public class S4A extends ActionBarActivity {
         Uri data = intent.getData();
         String type = intent.getType();
 
+        //data = Uri.parse("file:///foo/bar");
+
         TextView sender = (TextView) findViewById(R.id.mailview_from_text);
         TextView subject = (TextView) findViewById(R.id.mailview_subject_text);
         TextView recipient = (TextView) findViewById(R.id.mailview_to_text);
