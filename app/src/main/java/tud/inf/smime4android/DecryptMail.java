@@ -13,6 +13,7 @@ import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Properties;
@@ -34,7 +35,7 @@ public class DecryptMail {
      * @param ksPassword
      * @return
      */
-    public static String decrypt(Uri data, char[] ksPassword) {
+    public static String decrypt(Uri data, char[] ksPassword, InputStream is) {
         String mailtext = "decrypted mail";
         String ksFile = "keystore.file";
 
@@ -46,16 +47,15 @@ public class DecryptMail {
         SMIMEEnveloped m = null;
         MimeMessage msg = null;
         try {
-            File file = new File(data.toString());
-            FileInputStream fis = new FileInputStream(file);
-            msg = new MimeMessage(session, fis);
-            m = new SMIMEEnveloped(msg);
+            File file = null;
+            file = new File(data.toString().substring(10));
+            // fis =
+            msg = new MimeMessage(session, is);
+         //   m = new SMIMEEnveloped(msg);
         } catch (MessagingException e1) {
             e1.printStackTrace();
-        } catch (FileNotFoundException e1) {
-            e1.printStackTrace();
-        } catch (CMSException e1) {
-            e1.printStackTrace();
+      //  } catch (CMSException e1) {
+       //     e1.printStackTrace();
         }
 
 //        MimeBodyPart res = new MimeBodyPart();

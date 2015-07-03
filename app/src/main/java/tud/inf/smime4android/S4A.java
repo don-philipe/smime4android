@@ -8,6 +8,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
@@ -38,10 +40,15 @@ public class S4A extends ActionBarActivity {
         subject.setText("No Subject");
         recipient.setText("Goofy");
         if(intent.getData()!=null) {
-            content.setText(DecryptMail.decrypt(data, password.toCharArray())
-                    + "\nType:" + type
-                    + "\nIntent:" + intent.toString()
-                    + "\n" + intent.getData().toString());
+            try {
+                FileInputStream fis = null;
+                content.setText(DecryptMail.decrypt(data, password.toCharArray(), this.getContentResolver().openInputStream(data))
+                        + "\nType:" + type
+                        + "\nIntent:" + intent.toString()
+                        + "\n" + intent.getData().toString());
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
         //}
     }
