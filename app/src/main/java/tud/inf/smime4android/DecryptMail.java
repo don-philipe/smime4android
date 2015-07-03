@@ -3,34 +3,18 @@ package tud.inf.smime4android;
 import android.net.Uri;
 
 import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.RecipientId;
-import org.bouncycastle.cms.RecipientInformation;
-import org.bouncycastle.cms.RecipientInformationStore;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
 import org.bouncycastle.mail.smime.SMIMEEnveloped;
 import org.bouncycastle.mail.smime.SMIMEException;
-import org.bouncycastle.mail.smime.SMIMEUtil;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Enumeration;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -38,7 +22,6 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 
 /**
  * Created by don on 17.06.15.
@@ -52,8 +35,8 @@ public class DecryptMail {
      * @return
      */
     public static String decrypt(Uri data, char[] ksPassword) {
-        //X509Certificate reciCert, PrivateKey privKey
         String mailtext = "decrypted mail";
+        String ksFile = "keystore.file";
 
         SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
 
@@ -93,38 +76,9 @@ public class DecryptMail {
         X509Certificate reciCert = null;
         PrivateKey privKey = null;
         try {
-            KeyStore ks = KeyStore.getInstance("PKCS7", "BC");
-            File keystorefile = new File("key.store");
-            if(keystorefile.exists()) {
-                ks.load(new FileInputStream(keystorefile), ksPassword);
-                Enumeration e = ks.aliases();
-                String keyAlias = null;
-                while (e.hasMoreElements()) {
-                    String alias = (String) e.nextElement();
-                    if(ks.isKeyEntry(alias)) {
-                        keyAlias = alias;
-                    }
-                }
-                if(keyAlias == null)
-                    return "no keyalias in keystore";
-                reciCert = (X509Certificate) ks.getCertificate(keyAlias);
-                privKey = (PrivateKey) ks.getKey(keyAlias, null);
-            }
-            else
-                return "no keystore file present";
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableKeyException e) {
+            reciCert = KeyStoreHandler.getCertificate(ksFile, ksPassword);
+            privKey = KeyStoreHandler.getPrivKey(ksFile, ksPassword);
+        } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
 
