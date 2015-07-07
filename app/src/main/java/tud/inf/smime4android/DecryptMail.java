@@ -1,8 +1,7 @@
 package tud.inf.smime4android;
 
-import android.net.Uri;
+import android.content.Context;
 
-import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
 import org.bouncycastle.mail.smime.SMIMEEnveloped;
@@ -10,9 +9,6 @@ import org.bouncycastle.mail.smime.SMIMEException;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -29,16 +25,25 @@ import javax.mail.internet.MimeMessage;
  */
 public class DecryptMail {
 
+    private Context context;
+
     /**
      *
-     * @param data
+     * @param context
+     */
+    public DecryptMail(Context context) {
+        this.context = context;
+    }
+
+    /**
+     *
+     * @param ksFile path to the keystore file
      * @param ksPassword
+     * @param is
      * @return
      */
-    public static String decrypt(Uri data, char[] ksPassword, InputStream is) {
+    public String decrypt(String ksFile, char[] ksPassword, InputStream is) {
         String mailtext = "decrypted mail";
-        String ksFile = "keystore.file";
-
         SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
 
         Properties props = System.getProperties();
@@ -47,9 +52,6 @@ public class DecryptMail {
         SMIMEEnveloped m = null;
         MimeMessage msg = null;
         try {
-            File file = null;
-            file = new File(data.toString().substring(10));
-            // fis =
             msg = new MimeMessage(session, is);
          //   m = new SMIMEEnveloped(msg);
         } catch (MessagingException e1) {
@@ -76,8 +78,9 @@ public class DecryptMail {
         X509Certificate reciCert = null;
         PrivateKey privKey = null;
         try {
-            reciCert = KeyStoreHandler.getCertificate(ksFile, ksPassword);
-            privKey = KeyStoreHandler.getPrivKey(ksFile, ksPassword);
+            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
+            reciCert = ksh.getCertificate(ksFile, ksPassword);
+            privKey = ksh.getPrivKey(ksFile, ksPassword);
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

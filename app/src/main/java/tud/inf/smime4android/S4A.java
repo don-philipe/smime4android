@@ -39,10 +39,11 @@ public class S4A extends ActionBarActivity {
         sender.setText("Mickey Mouse");
         subject.setText("No Subject");
         recipient.setText("Goofy");
+        String ksPath = this.getResources().getString(R.string.ks_path);
         if(intent.getData()!=null) {
             try {
-                FileInputStream fis = null;
-                content.setText(DecryptMail.decrypt(data, password.toCharArray(), this.getContentResolver().openInputStream(data))
+                DecryptMail dm = new DecryptMail(this);
+                content.setText(dm.decrypt(ksPath, password.toCharArray(), this.getContentResolver().openInputStream(data))
                         + "\nType:" + type
                         + "\nIntent:" + intent.toString()
                         + "\n" + intent.getData().toString());

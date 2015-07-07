@@ -1,5 +1,7 @@
 package tud.inf.smime4android;
 
+import android.content.Context;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,14 +23,23 @@ import java.util.Enumeration;
  */
 public class KeyStoreHandler {
 
+    private Context context;
+    private String ks_type;
+    private String ks_provider;
+
+    public KeyStoreHandler(Context context) {
+        this.context = context;
+        this.ks_type = this.context.getResources().getString(R.string.ks_type);
+        this.ks_provider = this.context.getResources().getString(R.string.ks_provider);
+    }
     /**
      *
      * @param keystorefile
      * @param password for the keystore
      */
-    public static void initKeyStore(File keystorefile, char[] password) {
+    public void initKeyStore(File keystorefile, char[] password) {
         try {
-            KeyStore ks = KeyStore.getInstance("PKCS7", "BC");
+            KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
             ks.load(null, null);
             ks.store(new FileOutputStream(keystorefile), password);
         } catch (KeyStoreException e) {
@@ -50,14 +61,51 @@ public class KeyStoreHandler {
      *
      * @param keystorefile
      * @param ksPassword
+     * @return -1 iff no keystore is present under keystorefile url,
+     * 0 iff keystore is present but has no entries,
+     * 1 iff at least one entry is in keystore,
+     * -2 if some other error occured
+     */
+    public int keyStorePresent(File keystorefile, char[] ksPassword) {
+        try {
+            KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
+            try {
+                ks.load(new FileInputStream(keystorefile), ksPassword);
+                if(ks.size() == 0)
+                    return 0;
+                else
+                    return 1;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return -1;
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (CertificateException e) {
+                e.printStackTrace();
+            } catch (KeyStoreException e) {
+                e.printStackTrace();
+                return -1;
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
+        return -2;
+    }
+
+    /**
+     *
+     * @param keystorefile
+     * @param ksPassword
      * @param alias key alias
      * @param certs certificate chain where certs[0] is the clients certificate, certs[1] ... certs[n] are intermediate certificates and certs[n+1] is the root certificate
      * @param privkey
      * @param keyPassword
      */
-    public static void addCertificate(File keystorefile, char[] ksPassword, String alias, Certificate[] certs, PrivateKey privkey, char[] keyPassword) {
+    public void addCertificate(File keystorefile, char[] ksPassword, String alias, Certificate[] certs, PrivateKey privkey, char[] keyPassword) {
         try {
-            KeyStore ks = KeyStore.getInstance("PKCS7", "BC");
+            KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
             ks.load(new FileInputStream(keystorefile), ksPassword);
             ks.setKeyEntry(alias, privkey, keyPassword, certs);
             ks.store(new FileOutputStream(keystorefile), ksPassword);
@@ -83,7 +131,7 @@ public class KeyStoreHandler {
      * @return null in case something went wrong while loading keystorefile
      * @throws
      */
-    public static X509Certificate getCertificate(String ksFile, char[] ksPassword) throws NoSuchFieldException {
+    public X509Certificate getCertificate(String ksFile, char[] ksPassword) throws NoSuchFieldException {
         try {
             KeyStore ks = getKeyStore(ksFile, ksPassword);
             if(ks != null) {
@@ -105,7 +153,7 @@ public class KeyStoreHandler {
      * @return
      * @throws NoSuchFieldException
      */
-    public static PrivateKey getPrivKey(String ksFile, char[] ksPassword) throws NoSuchFieldException{
+    public PrivateKey getPrivKey(String ksFile, char[] ksPassword) throws NoSuchFieldException{
         try {
             KeyStore ks = getKeyStore(ksFile, ksPassword);
             if(ks != null) {
@@ -131,10 +179,10 @@ public class KeyStoreHandler {
      * @return can be null
      * @throws NoSuchFieldException
      */
-    protected static KeyStore getKeyStore(String ksFile, char[] ksPassword) throws NoSuchFieldException {
+    protected KeyStore getKeyStore(String ksFile, char[] ksPassword) throws NoSuchFieldException {
         KeyStore ks = null;
         try {
-            ks = KeyStore.getInstance("PKCS7", "BC");
+            ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (NoSuchProviderException e) {
@@ -164,7 +212,7 @@ public class KeyStoreHandler {
      * @return
      * @throws KeyStoreException
      */
-    protected static String getKeyAlias(KeyStore ks, char[] ksPassword) throws KeyStoreException {
+    protected String getKeyAlias(KeyStore ks, char[] ksPassword) throws KeyStoreException {
         Enumeration e = ks.aliases();
         String keyAlias = null;
         while (e.hasMoreElements()) {
