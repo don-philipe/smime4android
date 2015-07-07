@@ -1,11 +1,12 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.activities;
 
 import android.content.Intent;
-import android.preference.PreferenceActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import tud.inf.smime4android.R;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -31,9 +32,16 @@ public class MainActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            Intent intent = new Intent(getBaseContext(), SettingsActivity.class);
-            startActivity(intent);
+        switch (id) {
+            case R.id.action_settings:
+                Intent certificateIntent = new Intent(getBaseContext(), CertificateActivity.class);
+                startActivity(certificateIntent);
+                break;
+            case R.id.action_about:
+                Intent aboutIntent = new Intent(getBaseContext(), AboutActivity.class);
+                startActivity(aboutIntent);
+                break;
+            default: break;
         }
 
         return super.onOptionsItemSelected(item);

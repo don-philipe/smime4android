@@ -1,4 +1,4 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.logic;
 
 import java.io.File;
 import java.io.FileInputStream;
