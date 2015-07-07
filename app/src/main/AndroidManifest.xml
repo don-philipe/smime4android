@@ -3,6 +3,15 @@
     package="tud.inf.smime4android" >
 
     <uses-sdk android:minSdkVersion="11" />
+
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="18" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="18" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -81,6 +90,14 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="tud.inf.smime4android.MainActivity" />
+        </activity>
+        <activity
+            android:name=".CertificateActivity"
+            android:label="@string/title_activity_certificate" >
+        </activity>
+        <activity
+            android:name=".AboutActivity"
+            android:label="@string/title_activity_about_activity" >
         </activity>
     </application>
 
