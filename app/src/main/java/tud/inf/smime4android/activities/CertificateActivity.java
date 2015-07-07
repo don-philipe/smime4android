@@ -1,7 +1,6 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.activities;
 
 import android.annotation.TargetApi;
-import android.content.Context;
 import android.os.Build;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -9,13 +8,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+
+import tud.inf.smime4android.R;
+import tud.inf.smime4android.logic.StableArrayAdapter;
 
 
 public class CertificateActivity extends ActionBarActivity {

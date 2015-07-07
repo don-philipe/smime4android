@@ -1,4 +1,4 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.logic;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -8,6 +8,8 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+
+import tud.inf.smime4android.R;
 
 /**
  * Created by Marco on 07.07.2015.

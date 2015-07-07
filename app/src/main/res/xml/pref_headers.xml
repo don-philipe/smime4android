@@ -2,13 +2,13 @@
 
     <!-- These settings headers are only used on tablets. -->
 
-    <header android:fragment="tud.inf.smime4android.SettingsActivity$GeneralPreferenceFragment"
+    <header android:fragment="tud.inf.smime4android.activities.SettingsActivity$GeneralPreferenceFragment"
         android:title="@string/pref_header_general" />
 
-    <header android:fragment="tud.inf.smime4android.SettingsActivity$NotificationPreferenceFragment"
+    <header android:fragment="tud.inf.smime4android.activities.SettingsActivity$NotificationPreferenceFragment"
         android:title="@string/pref_header_notifications" />
 
-    <header android:fragment="tud.inf.smime4android.SettingsActivity$DataSyncPreferenceFragment"
+    <header android:fragment="tud.inf.smime4android.activities.SettingsActivity$DataSyncPreferenceFragment"
         android:title="@string/pref_header_data_sync" />
 
 </preference-headers>

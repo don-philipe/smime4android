@@ -1,10 +1,12 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.activities;
 
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+
+import tud.inf.smime4android.R;
 
 
 public class AboutActivity extends ActionBarActivity {
