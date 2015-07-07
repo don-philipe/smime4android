@@ -1,4 +1,4 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.activities;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -21,6 +21,8 @@ import android.support.v4.app.NavUtils;
 
 
 import java.util.List;
+
+import tud.inf.smime4android.R;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On

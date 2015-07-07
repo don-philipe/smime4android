@@ -1,4 +1,4 @@
-package tud.inf.smime4android;
+package tud.inf.smime4android.logic;
 
 import android.test.InstrumentationTestCase;
 
@@ -8,7 +8,7 @@ import java.io.File;
 import java.security.Key;
 
 import dalvik.annotation.TestTargetClass;
-import tud.inf.smime4android.KeyStoreHandler;
+import tud.inf.smime4android.logic.KeyStoreHandler;
 
 import static org.junit.Assert.*;
 

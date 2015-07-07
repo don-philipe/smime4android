@@ -2,10 +2,14 @@
     <string name="app_name">smime4android</string>
 
     <string name="intent_decrypt_file">Datei entschlüsseln mit smime4android</string>
-
+    <string name="certificates_overview">Installed certificates:</string>
+    <string name="certificates_install">Add new certificates</string>
+    <string name="menu_certificates">Certificates</string>
+    <string name="menu_about">About</string>
+    <string name="about_header">About</string>
+    <string name="about_content">blabla</string>
     <string name="hello_world">The main window.</string>
     <string name="action_settings">Settings</string>
-    <string name="action_about">About</string>
     <string name="mailview_from">From:</string>
     <string name="mailview_from_text">empty</string>
     <string name="mailview_to">To:</string>
@@ -13,10 +17,14 @@
     <string name="mailview_subject">Subject:</string>
     <string name="mailview_subject_text">empty</string>
     <string name="mailview_mailcontent">Hello World!</string>
-    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_main">S/MIME 4 Android</string>
     <string name="title_activity_preferences">PreferencesActivity</string>
 
     <string name="ks_path">keystore.file</string>
     <string name="ks_type">PKCS7</string>
     <string name="ks_provider">BC</string>
+    <string name="title_activity_certificate">Certificates</string>
+    <string name="title_activity_about_activity">About</string>
+    <string name="certificate_listview_item_text">Example Certificate</string>
+    <string name="certificate_listview_item_button">Add Certificates</string>
 </resources>
