@@ -2,7 +2,7 @@
     <string name="app_name">smime4android</string>
 
     <string name="intent_decrypt_file">Datei entschlüsseln mit smime4android</string>
-    <string name="certificates_overview">Installed certificates</string>
+    <string name="certificates_overview">Installed certificates:</string>
     <string name="certificates_install">Add new certificates</string>
     <string name="menu_certificates">Certificates</string>
     <string name="menu_about">About</string>
@@ -22,5 +22,5 @@
     <string name="title_activity_certificate">Certificates</string>
     <string name="title_activity_about_activity">About</string>
     <string name="certificate_listview_item_text">Example Certificate</string>
-    <string name="certificate_listview_item_button">Remove</string>
+    <string name="certificate_listview_item_button">Add Certificates</string>
 </resources>
