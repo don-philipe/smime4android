@@ -1,6 +1,8 @@
 package tud.inf.smime4android.activities;
 
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
+import android.database.Cursor;
 import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -8,7 +10,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import tud.inf.smime4android.logic.DecryptMail;
 import tud.inf.smime4android.R;
@@ -23,7 +27,8 @@ public class MailviewActivity extends ActionBarActivity {
 
         // Get the intent that started this activity
         Intent intent = getIntent();
-        Uri data = intent.getData();
+        Uri text = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        Uri data = Uri.parse(intent.getData().toString());
         String type = intent.getType();
 
         TextView sender = (TextView) findViewById(R.id.mailview_from_text);
@@ -41,11 +46,25 @@ public class MailviewActivity extends ActionBarActivity {
         if(intent.getData()!=null) {
             try {
                 DecryptMail dm = new DecryptMail(this);
-                content.setText(dm.decrypt(ksPath, password.toCharArray(), this.getContentResolver().openInputStream(data))
+
+//                Uri k9Uri = Uri.parse("content://com.fsck.k9.messageprovider/inbox_messages/");
+//                this.getIntent().setAction("READ_MESSAGES");
+//                Cursor curSt = this.getContentResolver().query(k9Uri, null, null, null, null);
+//                curSt.moveToFirst();
+//                String preview = curSt.getString(curSt.getColumnIndex("preview"));
+
+                Cursor cursor = this.getContentResolver().query(data, null, null, null, null);
+                cursor.moveToFirst();
+                String id = cursor.getString(cursor.getColumnIndex("_id"));
+                AssetFileDescriptor afd = this.getContentResolver().openAssetFileDescriptor(data, "r");
+                content.setText(dm.decrypt(ksPath, password.toCharArray(), afd.createInputStream())//this.getContentResolver().openInputStream(data))
                         + "\nType:" + type
                         + "\nIntent:" + intent.toString()
                         + "\n" + intent.getData().toString());
+                cursor.close();
             } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }

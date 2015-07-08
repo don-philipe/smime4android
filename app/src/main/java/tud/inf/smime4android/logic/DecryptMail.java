@@ -2,6 +2,7 @@ package tud.inf.smime4android.logic;
 
 import android.content.Context;
 
+import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
 import org.bouncycastle.mail.smime.SMIMEEnveloped;
@@ -9,6 +10,7 @@ import org.bouncycastle.mail.smime.SMIMEException;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -51,13 +53,15 @@ public class DecryptMail {
 
         SMIMEEnveloped m = null;
         MimeMessage msg = null;
+        MimeBodyPart mbp = null;
         try {
             msg = new MimeMessage(session, is);
-         //   m = new SMIMEEnveloped(msg);
+            mbp = new MimeBodyPart(is);
+//            m = new SMIMEEnveloped(msg);
         } catch (MessagingException e1) {
             e1.printStackTrace();
-      //  } catch (CMSException e1) {
-       //     e1.printStackTrace();
+//        } catch (CMSException e1) {
+//            e1.printStackTrace();
         }
 
 //        MimeBodyPart res = new MimeBodyPart();
