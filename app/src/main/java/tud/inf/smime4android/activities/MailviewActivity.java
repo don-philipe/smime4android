@@ -50,7 +50,7 @@ public class MailviewActivity extends ActionBarActivity {
 
             String plaintext;
             try {
-                plaintext = readTextFromUri(this, intent.getData(), "base64");
+                plaintext = readTextFromUri(this, intent.getData());
                 DecryptMail dm = new DecryptMail(this);
                 content.setText(plaintext);
             } catch (IOException e) {
@@ -93,7 +93,7 @@ public class MailviewActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static String readTextFromUri(Context context, Uri outputUri, String charset)
+    public static String readTextFromUri(Context context, Uri outputUri)
             throws IOException {
 
         byte[] decryptedMessage;
@@ -111,18 +111,7 @@ public class MailviewActivity extends ActionBarActivity {
         }
 
         String plaintext;
-       /* if (charset != null) {
-            try {
-                plaintext = new String(decryptedMessage, charset);
-            } catch (UnsupportedEncodingException e) {
-                // if we can't decode properly, just fall back to utf-8
-                plaintext = new String(decryptedMessage);
-            }
-        } else {
-            plaintext = new String(decryptedMessage);
-        }*/
         plaintext = Base64.encodeToString(decryptedMessage,Base64.DEFAULT);
-
         return plaintext;
 
     }
