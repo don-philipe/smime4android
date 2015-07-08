@@ -52,7 +52,8 @@ public class MailviewActivity extends ActionBarActivity {
             try {
                 plaintext = readTextFromUri(this, intent.getData());
                 DecryptMail dm = new DecryptMail(this);
-                content.setText(plaintext);
+               // content.setText(plaintext);
+                content.setText(dm.decrypt(ksPath,password.toCharArray(),this.getContentResolver().openInputStream(intent.getData()),plaintext));
             } catch (IOException e) {
                 e.printStackTrace();
             }

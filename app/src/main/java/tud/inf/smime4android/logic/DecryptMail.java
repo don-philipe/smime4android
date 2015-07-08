@@ -42,14 +42,14 @@ public class DecryptMail {
      * @param is
      * @return
      */
-    public String decrypt(String ksFile, char[] ksPassword, InputStream is) {
+    public String decrypt(String ksFile, char[] ksPassword, InputStream is, String content) {
         String mailtext = "decrypted mail";
         SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
 
         Properties props = System.getProperties();
         Session session = Session.getDefaultInstance(props);
 
-        SMIMEEnveloped m = null;
+    /*    SMIMEEnveloped m = null;
         MimeMessage msg = null;
         try {
             msg = new MimeMessage(session, is);
@@ -58,11 +58,11 @@ public class DecryptMail {
             e1.printStackTrace();
       //  } catch (CMSException e1) {
        //     e1.printStackTrace();
-        }
+        }*/
 
 //        MimeBodyPart res = new MimeBodyPart();
 //        MimeMultipart mm = (MimeMultipart) m.getEncryptedContent();
-
+/*
         MimeMessage body = new MimeMessage(session);
         try {
             body.setFrom(msg.getFrom().toString());
@@ -73,7 +73,7 @@ public class DecryptMail {
             body.saveChanges();
         } catch (MessagingException e) {
             e.printStackTrace();
-        }
+        }*/
 
         X509Certificate reciCert = null;
         PrivateKey privKey = null;
@@ -85,19 +85,27 @@ public class DecryptMail {
             e.printStackTrace();
         }
 
-        MimeBodyPart dec = new MimeBodyPart();
+        MimeBodyPart body = null;
         try {
-            dec = toolkit.decrypt(body, new JceKeyTransRecipientId(reciCert), new JceKeyTransEnvelopedRecipient(privKey).setProvider("BC"));
-        } catch (SMIMEException e) {
-            e.printStackTrace();
+            body = new MimeBodyPart(null, content.getBytes());
+
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+       if(reciCert!=null && privKey!=null) {
+           MimeBodyPart dec = new MimeBodyPart();
+           try {
+               dec = toolkit.decrypt(body, new JceKeyTransRecipientId(reciCert), new JceKeyTransEnvelopedRecipient(privKey).setProvider("BC"));
+           } catch (SMIMEException e) {
+               e.printStackTrace();
+           } catch (MessagingException e) {
+               e.printStackTrace();
+           }
 
-        mailtext = dec.toString();
-
-        //?
-
+           mailtext = dec.toString();
+       }else {
+           mailtext = "Entschlüsselung leider nicht möglich";
+       }
         return mailtext;
     }
 }
