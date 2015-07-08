@@ -94,6 +94,29 @@
         <activity
             android:name=".activities.CertificateActivity"
             android:label="@string/title_activity_certificate" >
+            <intent-filter android:label="@string/intent_add_cert" >
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:host="*" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+
+                <!-- Zertifikat -->
+                <data android:pathPattern=".*\\.crt" />
+                <data android:pathPattern=".*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".activities.AboutActivity"
