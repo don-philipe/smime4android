@@ -27,6 +27,11 @@
         android:id="@+id/certificates_listView"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
+
+        <TextView android:id="@+id/empty_listview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="@string/certificates_emptylist" />
     </LinearLayout>
 
     <LinearLayout

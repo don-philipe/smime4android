@@ -92,8 +92,8 @@
     <orderEntry type="library" exported="" name="bcprov-jdk15on-1.52" level="project" />
     <orderEntry type="library" exported="" name="bcpkix-jdk15on-1.52" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="mockito-core-2.0.26-beta" level="project" />
-    <orderEntry type="library" exported="" name="javax.mail-1.5.4" level="project" />
     <orderEntry type="library" exported="" name="support-annotations-22.2.0" level="project" />
+    <orderEntry type="library" exported="" name="javax.mail-1.5.4" level="project" />
     <orderEntry type="library" exported="" name="support-v4-22.2.0" level="project" />
     <orderEntry type="library" exported="" name="appcompat-v7-22.2.0" level="project" />
     <orderEntry type="library" exported="" name="activation-1.1" level="project" />

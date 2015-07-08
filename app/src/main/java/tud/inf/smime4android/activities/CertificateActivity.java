@@ -1,32 +1,32 @@
 package tud.inf.smime4android.activities;
 
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Base64;
+import android.view.ContextMenu;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.bouncycastle.jcajce.provider.asymmetric.X509;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.security.NoSuchProviderException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -36,26 +36,25 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import tud.inf.smime4android.R;
-import tud.inf.smime4android.logic.DecryptMail;
 import tud.inf.smime4android.logic.StableArrayAdapter;
 
 
 public class CertificateActivity extends ActionBarActivity {
 
+    public final ArrayList<String> list = new ArrayList<String>();
+    public final ArrayList<ArrayList<X509Certificate>> certificateList = new ArrayList<ArrayList<X509Certificate>>();
+    public ListView listView = null;
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Intent intent = getIntent();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_certificate);
 
-        String[] values = new String[] { "Marcos Zertifikat", "Dons Zertifikat", "Roegnaraks Zertifikat" };
         if(intent.getData()!=null) {
             //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
-
-
 
             String cert;
             try {
@@ -75,12 +74,17 @@ public class CertificateActivity extends ActionBarActivity {
 //                cert = x509cert.getType()+"\n"+x509cert.getNotAfter();
                 TextView tv = (TextView)findViewById(R.id.certificate);
                 String certs = "";
+
+                ArrayList<X509Certificate> temporaryCertsList = new ArrayList<X509Certificate>();
                 for(X509Certificate x: x509certs){
                     certs+=x.toString()+"\n\n";
+                    temporaryCertsList.add(x);
                 }
-                tv.setText(certs);
+                certificateList.add(temporaryCertsList);
+                list.add(findCName(temporaryCertsList.get(temporaryCertsList.size() - 1).getSubjectDN().getName()));
 
-                values[1] = cert;
+//                tv.setText(certs);
+
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (CertificateExpiredException e) {
@@ -92,37 +96,130 @@ public class CertificateActivity extends ActionBarActivity {
             }
         }
 
-
-        final ArrayList<String> list = new ArrayList<String>();
-        for (int i = 0; i < values.length; ++i) {
-            list.add(values[i]);
-        }
-
-        final ListView listView = (ListView) findViewById(R.id.certificates_listView);
+        listView = (ListView) findViewById(R.id.certificates_listView);
         final StableArrayAdapter adapter = new StableArrayAdapter(this, list);
+        listView.setEmptyView(findViewById(R.id.empty_listview));
         listView.setAdapter(adapter);
+        registerForContextMenu(findViewById(R.id.certificates_listView));
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
             @Override
-            public void onItemClick(AdapterView<?> parent, final View view,
-                                    int position, long id) {
-                final String item = (String) parent.getItemAtPosition(position);
-                view.animate().setDuration(500).alpha(0)
-                        .withEndAction(new Runnable() {
-                            @Override
-                            public void run() {
-                                list.remove(item);
-                                adapter.notifyDataSetChanged();
-                                view.setAlpha(1);
-                            }
-                        });
+            public void onItemClick(final AdapterView<?> parent, final View view,
+                                    final int position, long id) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+                builder.setMessage(R.string.dialog_delete_item_text)
+                        .setTitle(R.string.dialog_delete_item_title);
+                builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        final String item = (String) parent.getItemAtPosition(position);
+                        view.animate().setDuration(500).alpha(0)
+                                .withEndAction(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        list.remove(item);
+                                        adapter.notifyDataSetChanged();
+                                        view.setAlpha(1);
+                                    }
+                                });
+                        certificateList.remove(position);
+                    }
+                });
+                builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User clicked OK button
+                    }
+                });
+
+                builder.create().show();
             }
 
         });
 
 }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v,
+                                    ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_context_listview, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        switch (item.getItemId()) {
+            case R.id.menu_context_plain:
+            {
+                ArrayList<X509Certificate> tempList = certificateList.get(info.position);
+                String text = tempList.get(tempList.size()-1).toString();
+                onCreateDialog(0, text, getString(R.string.menu_context_details),info.position).show();
+            }
+                break;
+            case R.id.menu_context_root:
+            {
+             onCreateDialog(1, "",getString(R.string.menu_context_root) , info.position).show();
+            }
+                break;
+            case R.id.menu_context_details: {
+            }
+                break;
+            default:
+                return super.onContextItemSelected(item);
+        }
+        return false;
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    protected Dialog onCreateDialog(int id, String content, String title, int position) {
+        // TODO Auto-generated method stub
+
+        switch (id){
+            case 0 : {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setView( this.getLayoutInflater().inflate(R.layout.dialog_text, null));
+                builder.setMessage(content)
+                        .setTitle(title);
+                builder.setPositiveButton(R.string.dialog_close, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User clicked OK button
+                    }
+                });
+
+                return builder.create();
+            }
+            case 1 : {
+                ArrayList<X509Certificate> tempList = certificateList.get(position);
+                String[] stringArray = new String[tempList.size()-1];
+                if (tempList.size()>1) {
+                    for (int i = 0; i < tempList.size() - 1; i++) {
+                        stringArray[i] = findCName(tempList.get(i).getSubjectDN().toString());
+                    }
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(title);
+                builder.setItems(stringArray, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int item) {
+                        // Do something with the selection
+                    }
+                });
+                builder.setPositiveButton(R.string.dialog_close, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User clicked OK button
+                    }
+                });
+
+                return builder.create();
+
+            }
+            default: {}
+        }
+
+        return null;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -248,5 +345,17 @@ public class CertificateActivity extends ActionBarActivity {
 //        x509Certificate.checkValidity();
 
         return x509certs;
+    }
+
+    private String findCName(String string){
+        String[] stringArray = string.split(",");
+        String result = "";
+        for (String s : stringArray){
+            if (s.startsWith("CN=")){
+                result = s.substring(3);
+            }
+        }
+
+        return result;
     }
 }

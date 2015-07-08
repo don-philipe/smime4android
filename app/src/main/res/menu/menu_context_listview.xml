@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="tud.inf.smime4android.activities.MainActivity">
+    <item android:id="@+id/menu_context_details" android:title="@string/menu_context_details"
+        android:orderInCategory="1" app:showAsAction="never" />
+    <item android:id="@+id/menu_context_plain" android:title="@string/menu_context_plain"
+        android:orderInCategory="2" app:showAsAction="never" />
+    <item android:id="@+id/menu_context_root" android:title="@string/menu_context_root"
+        android:orderInCategory="3" app:showAsAction="never" />
+</menu>
