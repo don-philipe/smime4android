@@ -18,6 +18,9 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 
+import tud.inf.smime4android.R;
+
+
 /**
  * Created by don on 24.06.15.
  */

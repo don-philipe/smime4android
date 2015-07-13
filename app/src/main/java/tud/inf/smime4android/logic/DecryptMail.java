@@ -10,6 +10,7 @@ import org.bouncycastle.mail.smime.SMIMEException;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.PrivateKey;
@@ -69,6 +70,7 @@ public class DecryptMail {
 
         MimeMessage body = new MimeMessage(session);
         try {
+            body.setContent(mbp, mbp.getContentType());
             body.setFrom(msg.getFrom().toString());
             // assume there is only one recipient
             body.setRecipient(Message.RecipientType.TO, msg.getAllRecipients()[0]);
