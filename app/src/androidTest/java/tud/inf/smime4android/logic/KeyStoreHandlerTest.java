@@ -2,7 +2,7 @@ package tud.inf.smime4android.logic;
 
 import android.test.InstrumentationTestCase;
 
-import org.junit.Test;
+//import org.junit.Test;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -28,7 +28,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     private File ksFile = new File("keystore.file");
     private char[] passwd = "1q2w3e4r".toCharArray();
 
-    @Test
+
     public void testInitKeyStore() {
         KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getContext());
         ksh.initKeyStore(this.ksFile, this.passwd);
@@ -37,7 +37,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         assertEquals(0, this.ksFile.length());
     }
 
-    @Test
+
     public void testKeyStorePresent() {
         KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getContext());
         ksh.initKeyStore(this.ksFile, this.passwd);
@@ -47,7 +47,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         assertEquals(1, ksh.keyStorePresent(this.ksFile, this.passwd));
     }
 
-    @Test
+
     public void testKeyAlias() {
         KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getContext());
         ksh.initKeyStore(this.ksFile, this.passwd);
