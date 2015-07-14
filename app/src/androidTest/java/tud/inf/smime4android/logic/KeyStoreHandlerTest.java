@@ -25,7 +25,8 @@ import java.security.spec.RSAPrivateCrtKeySpec;
  */
 public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
-    private File ksFile = new File("keystore.file");
+    private String ksFilePath = "keystore.file";
+    private File ksFile = new File(ksFilePath);
     private char[] passwd = "1q2w3e4r".toCharArray();
 
 
@@ -132,10 +133,10 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             e.printStackTrace();
         }
 
-        ksh.addCertificate(this.ksFile, this.passwd, "keyalias", chain, privKey, null);
+        ksh.addCertificate(this.ksFilePath, this.passwd, "keyalias", chain, privKey, null);
         try {
-            assertEquals("keyalias", ksh.getKeyAlias(this.ksFile.getAbsolutePath(), this.passwd));
-            assertEquals(privKey, ksh.getPrivKey(this.ksFile.getAbsolutePath(), this.passwd));
+            assertEquals("keyalias", ksh.getKeyAlias(this.ksFilePath, this.passwd));
+            assertEquals(privKey, ksh.getPrivKey(this.ksFilePath, this.passwd));
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (NoSuchFieldException e) {
