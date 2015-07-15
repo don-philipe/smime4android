@@ -17,6 +17,8 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
+import java.util.LinkedList;
+import java.util.List;
 
 //import static org.junit.Assert.*;
 
@@ -134,9 +136,11 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         }
 
         ksh.addCertificate(this.ksFilePath, this.passwd, "keyalias", chain, privKey, null);
+        List<String> aliaslist = new LinkedList<String>();
+        aliaslist.add("keyalias");
         try {
-            assertEquals("keyalias", ksh.getKeyAlias(this.ksFilePath, this.passwd));
-            assertEquals(privKey, ksh.getPrivKey(this.ksFilePath, this.passwd));
+            assertEquals(aliaslist, ksh.getAllKeyAliases(this.ksFilePath, this.passwd));
+            assertEquals(privKey, ksh.getPrivKey(this.ksFilePath, this.passwd, "keyalias"));
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (NoSuchFieldException e) {

@@ -37,6 +37,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 
 import tud.inf.smime4android.R;
 
@@ -153,19 +155,22 @@ public class KeyStoreHandler {
      * @return null in case something went wrong while loading keystorefile
      * @throws
      */
-    public X509Certificate getCertificate(String ksFilePath, char[] ksPassword) throws NoSuchFieldException {
+    public List<X509Certificate> getAllCertificates(String ksFilePath, char[] ksPassword) throws NoSuchFieldException {
+        List<X509Certificate> certlist = new LinkedList<X509Certificate>();
         try {
             KeyStore ks = loadKeyStore(ksFilePath, ksPassword);
             if(ks != null) {
-                String keyAlias = getKeyAlias(ksFilePath, ksPassword);
-                return (X509Certificate) ks.getCertificate(keyAlias);
+                List<String> keyAliases = getAllKeyAliases(ksFilePath, ksPassword);
+                for(String s : keyAliases) {
+                    certlist.add((X509Certificate) ks.getCertificate(s));
+                }
             }
             else
                 throw new NoSuchFieldException("can't get keystore");
         } catch (KeyStoreException e) {
             e.printStackTrace();
         }
-        return null;
+        return certlist;
     }
 
     /**
@@ -175,12 +180,11 @@ public class KeyStoreHandler {
      * @return
      * @throws NoSuchFieldException
      */
-    public PrivateKey getPrivKey(String ksFilePath, char[] ksPassword) throws NoSuchFieldException{
+    public PrivateKey getPrivKey(String ksFilePath, char[] ksPassword, String alias) throws NoSuchFieldException{
         try {
             KeyStore ks = loadKeyStore(ksFilePath, ksPassword);
             if(ks != null) {
-                String keyAlias = getKeyAlias(ksFilePath, ksPassword);
-                return (PrivateKey) ks.getKey(keyAlias, null);
+                return (PrivateKey) ks.getKey(alias, null);
             }
             else
                 throw new NoSuchFieldException("can't get keystore");
@@ -310,7 +314,7 @@ public class KeyStoreHandler {
      * @return
      * @throws KeyStoreException
      */
-    protected String getKeyAlias(String ksFilePath, char[] ksPassword) throws KeyStoreException {
+    protected List<String> getAllKeyAliases(String ksFilePath, char[] ksPassword) throws KeyStoreException {
         KeyStore ks = null;
         try {
             ks = this.loadKeyStore(ksFilePath, ksPassword);
@@ -318,17 +322,17 @@ public class KeyStoreHandler {
             e.printStackTrace();
         }
         Enumeration e = ks.aliases();
-        String keyAlias = null;
+        List<String> keyAliases = new LinkedList<String>();
         while (e.hasMoreElements()) {
             String alias = (String) e.nextElement();
             if(ks.isKeyEntry(alias)) {
-                keyAlias = alias;
+                keyAliases.add(alias);
             }
         }
-        if(keyAlias == null)
-            return "no keyalias in keystore";
+        if(keyAliases.isEmpty())
+            return null;
         else
-            return keyAlias;
+            return keyAliases;
     }
 
     /**

@@ -12,6 +12,7 @@ import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -79,8 +80,9 @@ public class DecryptMail {
         PrivateKey privKey = null;
         try {
             KeyStoreHandler ksh = new KeyStoreHandler(this.context);
-            reciCert = ksh.getCertificate(ksFile, ksPassword);
-            privKey = ksh.getPrivKey(ksFile, ksPassword);
+            List<X509Certificate> x509 = ksh.getAllCertificates(ksFile, ksPassword);
+            //reciCert =
+            privKey = ksh.getPrivKey(ksFile, ksPassword, "alias");
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

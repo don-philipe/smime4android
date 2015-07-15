@@ -30,6 +30,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import tud.inf.smime4android.R;
+import tud.inf.smime4android.logic.KeyStoreHandler;
 import tud.inf.smime4android.logic.StableArrayAdapter;
 
 
@@ -72,17 +74,32 @@ public class CertificateActivity extends ActionBarActivity {
 
 //                cert = loadX509CertificateFromFile(getFIS(this,intent.getData())).getSigAlgName();
 
-                Collection<X509Certificate> x509certs = loadX509CertificateFromFile(getFIS(this, intent.getData()));
+                ArrayList<X509Certificate> x509certs = loadX509CertificateFromFile(getFIS(this, intent.getData()));
                 //TODO import cert to keystore
 
 //                cert = x509cert.getType()+"\n"+x509cert.getNotAfter();
 
-                ArrayList<X509Certificate> temporaryCertsList = new ArrayList<X509Certificate>();
-                for (X509Certificate x : x509certs) {
-                    temporaryCertsList.add(x);
+                Certificate[] temporaryCertsList = new Certificate[x509certs.size()];
+                int j = 0;
+                for (int i = x509certs.size() - 1; i >= 0; i--) {
+                    temporaryCertsList[j++] = x509certs.get(i);
                 }
-                certificateList.add(temporaryCertsList);
-                list.add(findCName(temporaryCertsList.get(temporaryCertsList.size() - 1).getSubjectDN().getName()));
+
+                KeyStoreHandler ksh = new KeyStoreHandler(this);
+                PrivateKey privKey = null; //TODO
+                char[] privKeyPasswd = "foo".toCharArray(); //TODO dialog
+                char [] ksPassword = "bar".toCharArray(); // TODO dialog
+                String alias = findCName(x509certs.get(x509certs.size() - 1).getSubjectDN().getName()); //CN=
+                ksh.addCertificate(getString(R.string.ks_path), ksPassword, alias, temporaryCertsList, privKey, privKeyPasswd);
+
+                certificateList.add(x509certs);
+                try {
+                    for(X509Certificate x509 : ksh.getAllCertificates(getString(R.string.ks_path), ksPassword)) {
+                        list.add(findCName(x509.getSubjectDN().getName()));
+                    }
+                } catch (NoSuchFieldException e) {
+                    e.printStackTrace();
+                }
 
 //                tv.setText(certs);
 
@@ -256,7 +273,7 @@ public class CertificateActivity extends ActionBarActivity {
      *                                         <li>if the certificate contained in the given file is not a X.509 certificate</li>
      *                                         </ul>
      */
-    public static Collection<X509Certificate> loadX509CertificateFromFile(FileInputStream x509CertificateFile) throws IOException,
+    public static ArrayList<X509Certificate> loadX509CertificateFromFile(FileInputStream x509CertificateFile) throws IOException,
             CertificateNotYetValidException, CertificateExpiredException, CertificateException {
 
         // Check availablity and readability of the given file first
@@ -288,7 +305,7 @@ public class CertificateActivity extends ActionBarActivity {
 //            throw new CertificateException(message);
 //        }
 
-        Collection<X509Certificate> x509certs = new ArrayList<X509Certificate>();
+        ArrayList<X509Certificate> x509certs = new ArrayList<X509Certificate>();
         for (Certificate c : certificates) {
             try {
                 ((X509Certificate) c).checkValidity();
