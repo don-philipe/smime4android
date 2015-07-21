@@ -5,6 +5,10 @@ import android.test.InstrumentationTestCase;
 //import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.KeyStoreException;
@@ -13,6 +17,7 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
@@ -31,27 +36,51 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
 
     public void testInitKeyStore() {
-        KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getContext());
-        ksh.initKeyStore(this.ksFile, this.passwd);
-        assertEquals(true, false);
+        KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getTargetContext());
         assertEquals(false, this.ksFile.exists());
+        ksh.initKeyStore(this.ksFilePath, this.passwd);
+        assertEquals(true, this.ksFile.exists());
         assertEquals(0, this.ksFile.length());
+        this.ksFile.delete();
     }
 
 
     public void testKeyStorePresent() {
-        KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getContext());
-        ksh.initKeyStore(this.ksFile, this.passwd);
-        assertEquals(-1, ksh.keyStorePresent(this.ksFile, this.passwd));
+        KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getTargetContext());
+        int result0 = -2;
+        try {
+            result0 = ksh.keyStorePresent(this.ksFile, this.passwd);
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        assertEquals(-1, result0);
 
-        ksh.initKeyStore(this.ksFile, this.passwd);
-        assertEquals(1, ksh.keyStorePresent(this.ksFile, this.passwd));
+        ksh.initKeyStore(this.ksFilePath, this.passwd);
+        int result1 = -2;
+        try {
+            result1 = ksh.keyStorePresent(this.ksFile, this.passwd);
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        assertEquals(0, result1);
     }
 
 
     public void testKeyAlias() {
-        KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getContext());
-        ksh.initKeyStore(this.ksFile, this.passwd);
+        KeyStoreHandler ksh = new KeyStoreHandler(getInstrumentation().getTargetContext());
+        ksh.initKeyStore(this.ksFilePath, this.passwd);
 
         // personal keys
         RSAPublicKeySpec pubKeySpec = new RSAPublicKeySpec(
@@ -134,13 +163,15 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         }
 
         ksh.addCertificate(this.ksFilePath, this.passwd, "keyalias", chain, privKey, null);
+        PrivateKey pk = null;
         try {
-            assertEquals("keyalias", ksh.getKeyAlias(this.ksFilePath, this.passwd));
-            assertEquals(privKey, ksh.getPrivKey(this.ksFilePath, this.passwd));
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
+            //assertEquals("keyalias", ksh.getKeyAlias(this.ksFilePath, this.passwd));
+            pk = ksh.getPrivKey(this.ksFilePath, this.passwd, "keyalias");
+//        } catch (KeyStoreException e) {
+//            e.printStackTrace();
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
+        assertEquals(privKey, pk);
     }
 }
