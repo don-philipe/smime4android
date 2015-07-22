@@ -11,7 +11,6 @@ import android.os.Build;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Base64;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,16 +18,17 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.w3c.dom.Text;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -89,12 +89,28 @@ public class CertificateActivity extends ActionBarActivity {
                 PrivateKey privKey = null; //TODO
                 char[] privKeyPasswd = "foo".toCharArray(); //TODO dialog
                 char [] ksPassword = "bar".toCharArray(); // TODO dialog
+                try {
+                    if(!ksh.keyStorePresent(new File(getString(R.string.ks_filename)), ksPassword)) {
+                        list.add("initializing keystore");
+                        ksh.initKeyStore(getString(R.string.ks_filename), ksPassword);
+                        File f = new File(this.getFilesDir() + "/" + getString(R.string.ks_filename));
+                        list.add("file exists: " + f.exists());
+                        list.add("keystore present: " + ksh.keyStorePresent(f, ksPassword));
+                    }
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (NoSuchProviderException e) {
+                    e.printStackTrace();
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                }
+
                 String alias = findCName(x509certs.get(x509certs.size() - 1).getSubjectDN().getName()); //CN=
-                ksh.addCertificate(getString(R.string.ks_path), ksPassword, alias, temporaryCertsList, privKey, privKeyPasswd);
+                ksh.addCertificate(getString(R.string.ks_filename), ksPassword, alias, temporaryCertsList, privKey, privKeyPasswd);
 
                 certificateList.add(x509certs);
                 try {
-                    for(X509Certificate x509 : ksh.getAllCertificates(getString(R.string.ks_path), ksPassword)) {
+                    for(X509Certificate x509 : ksh.getAllCertificates(getString(R.string.ks_filename), ksPassword)) {
                         list.add(findCName(x509.getSubjectDN().getName()));
                     }
                 } catch (NoSuchFieldException e) {

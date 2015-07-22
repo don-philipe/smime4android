@@ -9,13 +9,10 @@ import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 
 import tud.inf.smime4android.logic.DecryptMail;
 import tud.inf.smime4android.R;
@@ -42,7 +39,7 @@ public class MailviewActivity extends ActionBarActivity {
         sender.setText("Mickey Mouse");
         subject.setText("No Subject");
         recipient.setText("Goofy");
-        String ksPath = this.getResources().getString(R.string.ks_path);
+        String ksPath = this.getResources().getString(R.string.ks_filename);
         // TODO read password from stdin ;)
         String password = "1q2w3e4r";
         if(intent.getData()!=null) {
