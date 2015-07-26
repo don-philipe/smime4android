@@ -146,7 +146,7 @@ public class KeyStoreHandler {
         try {
             KeyStore ks = this.loadKeyStore(ksFileName, ksPassword);
             if(ks != null) {
-                List<String> keyAliases = getAllKeyAliases(ksFileName, ksPassword);
+                List<String> keyAliases = this.getAllKeyAliases(ksFileName, ksPassword);
                 for(String s : keyAliases) {
                     certlist.add((X509Certificate) ks.getCertificate(s));
                 }
@@ -262,9 +262,10 @@ public class KeyStoreHandler {
             e.printStackTrace();
         }
         try {
-            String path = this.context.getFilesDir() + "/";
-            InputStream inputStream = this.context.openFileInput(path + ksFileName);
+            //String path = this.context.getFilesDir() + "/";
+            InputStream inputStream = this.context.openFileInput(ksFileName);
             ks.load(inputStream, ksPassword);
+            inputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -295,7 +296,7 @@ public class KeyStoreHandler {
      *
      * @param ksFileName
      * @param ksPassword
-     * @return
+     * @return can return empty list if no aliases present
      * @throws KeyStoreException
      */
     protected List<String> getAllKeyAliases(String ksFileName, char[] ksPassword) throws KeyStoreException {
@@ -313,10 +314,7 @@ public class KeyStoreHandler {
                 keyAliases.add(alias);
             }
         }
-        if(keyAliases.isEmpty())
-            return null;
-        else
-            return keyAliases;
+        return keyAliases;
     }
 
     /**
