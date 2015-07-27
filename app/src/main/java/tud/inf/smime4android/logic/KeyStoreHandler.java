@@ -338,10 +338,11 @@ public class KeyStoreHandler {
         cert.checkValidity(new Date());
         cert.verify(pubKey);
 
-        PKCS12BagAttributeCarrier   bagAttr = (PKCS12BagAttributeCarrier)cert;
-        // this is actually optional - but if you want to have control
-        // over setting the friendly name this is the way to do it...
-        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_friendlyName, new DERBMPString("root certificate"));
+        //TODO: this cast throws exception:
+//        PKCS12BagAttributeCarrier bagAttr = (PKCS12BagAttributeCarrier)cert;
+//        // this is actually optional - but if you want to have control
+//        // over setting the friendly name this is the way to do it...
+//        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_friendlyName, new DERBMPString("root certificate"));
 
         return cert;
     }
@@ -380,10 +381,10 @@ public class KeyStoreHandler {
         cert.checkValidity(new Date());
         cert.verify(caCert.getPublicKey());
 
-        PKCS12BagAttributeCarrier   bagAttr = (PKCS12BagAttributeCarrier)cert;
-        // this is actually optional - but if you want to have control
-        // over setting the friendly name this is the way to do it...
-        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_friendlyName, new DERBMPString("intermediate certificate"));
+//        PKCS12BagAttributeCarrier bagAttr = (PKCS12BagAttributeCarrier)cert;
+//        // this is actually optional - but if you want to have control
+//        // over setting the friendly name this is the way to do it...
+//        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_friendlyName, new DERBMPString("intermediate certificate"));
 
         return cert;
     }
@@ -430,15 +431,15 @@ public class KeyStoreHandler {
         cert.checkValidity(new Date());
         cert.verify(caPubKey);
 
-        PKCS12BagAttributeCarrier   bagAttr = (PKCS12BagAttributeCarrier)cert;
-
-        // this is also optional - in the sense that if you leave this
-        // out the keystore will add it automatically, note though that
-        // for the browser to recognise the associated private key this
-        // you should at least use the pkcs_9_localKeyId OID and set it
-        // to the same as you do for the private key's localKeyId.
-        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_friendlyName, new DERBMPString("client key"));
-        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_localKeyId, extUtils.createSubjectKeyIdentifier(pubKey));
+//        PKCS12BagAttributeCarrier bagAttr = (PKCS12BagAttributeCarrier)cert;
+//
+//        // this is also optional - in the sense that if you leave this
+//        // out the keystore will add it automatically, note though that
+//        // for the browser to recognise the associated private key this
+//        // you should at least use the pkcs_9_localKeyId OID and set it
+//        // to the same as you do for the private key's localKeyId.
+//        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_friendlyName, new DERBMPString("client key"));
+//        bagAttr.setBagAttribute(PKCSObjectIdentifiers.pkcs_9_at_localKeyId, extUtils.createSubjectKeyIdentifier(pubKey));
 
         return cert;
     }
