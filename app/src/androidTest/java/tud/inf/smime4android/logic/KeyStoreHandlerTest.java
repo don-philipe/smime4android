@@ -3,13 +3,7 @@ package tud.inf.smime4android.logic;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
-//import org.junit.Test;
-
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.KeyStoreException;
@@ -24,35 +18,36 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 
-//import static org.junit.Assert.*;
 
 /**
  * Created by don on 03.07.15.
  */
 public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
-    private String ksFilePath = "keystore.file";
-    private File ksFile = new File(ksFilePath);
+    private String ksFileName = "keystore.file";
     private char[] passwd = "1q2w3e4r".toCharArray();
 
     public void testInitKeyStore() {
         Context targetcontext = getInstrumentation().getTargetContext();
-        targetcontext.deleteFile(this.ksFilePath);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+        targetcontext.deleteFile(this.ksFileName);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
         assertEquals(0, targetcontext.fileList().length);
-        ksh.initKeyStore(this.ksFilePath, this.passwd);
-        assertEquals(this.ksFilePath, targetcontext.fileList()[0]);
-        targetcontext.deleteFile(this.ksFilePath);
+        ksh.initKeyStore();
+        assertEquals(this.ksFileName, targetcontext.fileList()[0]);
+        targetcontext.deleteFile(this.ksFileName);
     }
 
 
     public void testKeyStorePresent() {
         Context targetcontext = getInstrumentation().getTargetContext();
-        targetcontext.deleteFile(this.ksFilePath);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+        targetcontext.deleteFile(this.ksFileName);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        File f = new File(targetcontext.getFilesDir() + "/" + this.ksFileName);
+
+        assertEquals(false, f.exists());
         boolean result0 = false;
         try {
-            result0 = ksh.keyStorePresent(this.ksFile, this.passwd);
+            result0 = ksh.keyStorePresent();
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -64,10 +59,12 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         }
         assertEquals(false, result0);
 
-        ksh.initKeyStore(this.ksFilePath, this.passwd);
+        ksh.initKeyStore();
+
+        assertEquals(true, f.exists());
         boolean result1 = false;
         try {
-            result1 = ksh.keyStorePresent(this.ksFile, this.passwd);
+            result1 = ksh.keyStorePresent();
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -78,21 +75,21 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             e.printStackTrace();
         }
         assertEquals(true, result1);
-        targetcontext.deleteFile(this.ksFilePath);
+        targetcontext.deleteFile(this.ksFileName);
     }
 
     public void testStoreAndLoad() {
         Context targetcontext = getInstrumentation().getTargetContext();
-        targetcontext.deleteFile(this.ksFilePath);
+        targetcontext.deleteFile(this.ksFileName);
 
-        KeyStoreHandler ksh0 = new KeyStoreHandler(targetcontext);
-        ksh0.initKeyStore(this.ksFilePath, this.passwd);
+        KeyStoreHandler ksh0 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        ksh0.initKeyStore();
 
-        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext);
-        ksh1.initKeyStore(this.ksFilePath, this.passwd);
+        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        ksh1.initKeyStore();
         boolean result1 = false;
         try {
-            result1 = ksh1.keyStorePresent(this.ksFile, this.passwd);
+            result1 = ksh1.keyStorePresent();
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -103,15 +100,15 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             e.printStackTrace();
         }
         assertEquals(true, result1);
-        targetcontext.deleteFile(this.ksFilePath);
+        targetcontext.deleteFile(this.ksFileName);
     }
 
 
     public void testGetPrivKey() {
         Context targetcontext = getInstrumentation().getTargetContext();
-        targetcontext.deleteFile(this.ksFilePath);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
-        ksh.initKeyStore(this.ksFilePath, this.passwd);
+        targetcontext.deleteFile(this.ksFileName);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        ksh.initKeyStore();
 
         // personal keys
         RSAPublicKeySpec pubKeySpec = new RSAPublicKeySpec(
@@ -202,14 +199,14 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         assertNotNull(chain[2]);
 
         String privKeyPasswd = "4r3e2w1q";
-        ksh.addCertificate(this.ksFilePath, this.passwd, "keyalias", chain, privKey, privKeyPasswd.toCharArray());
+        ksh.addPrivKeyAndCertificate("keyalias", chain, privKey, privKeyPasswd.toCharArray());
         PrivateKey pk = null;
         try {
-            pk = ksh.getPrivKey(this.ksFilePath, this.passwd, "keyalias");
+            pk = ksh.getPrivKey("keyalias");
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
         assertEquals(privKey, pk);
-        targetcontext.deleteFile(this.ksFilePath);
+        targetcontext.deleteFile(this.ksFileName);
     }
 }

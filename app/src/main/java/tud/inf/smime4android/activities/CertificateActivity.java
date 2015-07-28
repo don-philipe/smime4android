@@ -85,17 +85,17 @@ public class CertificateActivity extends ActionBarActivity {
                     temporaryCertsList[j++] = x509certs.get(i);
                 }
 
-                KeyStoreHandler ksh = new KeyStoreHandler(this);
+                char [] ksPassword = "bar".toCharArray(); // TODO dialog
+                KeyStoreHandler ksh = new KeyStoreHandler(this, getString(R.string.ks_filename), ksPassword);
                 PrivateKey privKey = null; //TODO
                 char[] privKeyPasswd = "foo".toCharArray(); //TODO dialog
-                char [] ksPassword = "bar".toCharArray(); // TODO dialog
                 try {
-                    if(!ksh.keyStorePresent(new File(getString(R.string.ks_filename)), ksPassword)) {
+                    if(!ksh.keyStorePresent()) {
                         list.add("initializing keystore");
-                        ksh.initKeyStore(getString(R.string.ks_filename), ksPassword);
+                        ksh.initKeyStore();
                         File f = new File(this.getFilesDir() + "/" + getString(R.string.ks_filename));
                         list.add("file exists: " + f.exists());
-                        list.add("keystore present: " + ksh.keyStorePresent(f, ksPassword));
+                        list.add("keystore present: " + ksh.keyStorePresent());
                     }
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
@@ -106,11 +106,11 @@ public class CertificateActivity extends ActionBarActivity {
                 }
 
                 String alias = findCName(x509certs.get(x509certs.size() - 1).getSubjectDN().getName()); //CN=
-                ksh.addCertificate(getString(R.string.ks_filename), ksPassword, alias, temporaryCertsList, privKey, privKeyPasswd);
+                ksh.addPrivKeyAndCertificate(alias, temporaryCertsList, privKey, privKeyPasswd);
 
                 certificateList.add(x509certs);
                 try {
-                    for(X509Certificate x509 : ksh.getAllCertificates(getString(R.string.ks_filename), ksPassword)) {
+                    for(X509Certificate x509 : ksh.getAllCertificates()) {
                         list.add(findCName(x509.getSubjectDN().getName()));
                     }
                 } catch (NoSuchFieldException e) {

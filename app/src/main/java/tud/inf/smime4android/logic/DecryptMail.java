@@ -79,10 +79,10 @@ public class DecryptMail {
         X509Certificate reciCert = null;
         PrivateKey privKey = null;
         try {
-            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
-            List<X509Certificate> x509 = ksh.getAllCertificates(ksFile, ksPassword);
+            KeyStoreHandler ksh = new KeyStoreHandler(this.context, ksFile, ksPassword);
+            List<X509Certificate> x509 = ksh.getAllCertificates();
             //reciCert =
-            privKey = ksh.getPrivKey(ksFile, ksPassword, "alias");
+            privKey = ksh.getPrivKey("alias");
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

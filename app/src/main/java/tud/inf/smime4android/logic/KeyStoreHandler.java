@@ -2,8 +2,6 @@ package tud.inf.smime4android.logic;
 
 import android.content.Context;
 
-import org.bouncycastle.asn1.DERBMPString;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -16,7 +14,6 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.jce.interfaces.PKCS12BagAttributeCarrier;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import java.io.File;
@@ -50,25 +47,27 @@ import tud.inf.smime4android.R;
 public class KeyStoreHandler {
 
     private Context context;
-    private String ks_type;
-    private String ks_provider;
+    private final String ks_type;
+    private final String ks_provider;
+    private final String ksFileName;
+    private final char[] ksPassword;
 
-    public KeyStoreHandler(Context context) {
+    public KeyStoreHandler(Context context, String fileName, char[] password) {
         this.context = context;
         this.ks_type = this.context.getResources().getString(R.string.ks_type);
         this.ks_provider = this.context.getResources().getString(R.string.ks_provider);
+        this.ksFileName = fileName;
+        this.ksPassword = password;
     }
 
     /**
      *
-     * @param ksFileName
-     * @param password for the keystore
      */
-    public void initKeyStore(String ksFileName, char[] password) {
+    public void initKeyStore() {
         try {
             KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
-            ks.load(null, password);
-            this.storeKeyStore(ks, ksFileName, password);
+            ks.load(null, this.ksPassword);
+            this.storeKeyStore(ks);
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (NoSuchProviderException e) {
@@ -86,18 +85,17 @@ public class KeyStoreHandler {
 
     /**
      *
-     * @param keystorefile
-     * @param ksPassword
      * @return
      * @throws CertificateException
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException
      * @throws KeyStoreException
      */
-    public boolean keyStorePresent(File keystorefile, char[] ksPassword) throws CertificateException, NoSuchAlgorithmException, NoSuchProviderException, KeyStoreException {
+    public boolean keyStorePresent() throws CertificateException, NoSuchAlgorithmException, NoSuchProviderException, KeyStoreException {
         KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
+        File keystorefile = new File(this.ksFileName);
         try {
-            ks.load(new FileInputStream(this.context.getFilesDir() + "/" + keystorefile), ksPassword);
+            ks.load(new FileInputStream(this.context.getFilesDir() + "/" + keystorefile), this.ksPassword);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -106,19 +104,17 @@ public class KeyStoreHandler {
     }
 
     /**
-     *
-     * @param ksFileName
-     * @param ksPassword
+     * Adds the private key with password and corresponding certificate chain to the keystore.
      * @param alias key alias
      * @param certs certificate chain where certs[0] is the clients certificate, certs[1] ... certs[n] are intermediate certificates and certs[n+1] is the root certificate
      * @param privkey
-     * @param keyPassword
+     * @param keyPassword password for the private key
      */
-    public void addCertificate(String ksFileName, char[] ksPassword, String alias, Certificate[] certs, PrivateKey privkey, char[] keyPassword) {
+    public void addPrivKeyAndCertificate(String alias, Certificate[] certs, PrivateKey privkey, char[] keyPassword) {
         try {
-            KeyStore ks = this.loadKeyStore(ksFileName, ksPassword);
+            KeyStore ks = this.loadKeyStore();
             ks.setKeyEntry(alias, privkey, keyPassword, certs);
-            this.storeKeyStore(ks, ksFileName, ksPassword);
+            this.storeKeyStore(ks);
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -135,18 +131,32 @@ public class KeyStoreHandler {
     }
 
     /**
+     * Adds a single certificate e.g. a root certificate to the keystore.
+     * @param alias name under which the certificate can be found in the keystore
+     * @param cert the certificate itself
+     */
+    public void addCertificate(String alias, Certificate cert) {
+        try {
+            KeyStore ks = this.loadKeyStore();
+            ks.setCertificateEntry(alias, cert);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      *
-     * @param ksFileName
-     * @param ksPassword
      * @return null in case something went wrong while loading keystorefile
      * @throws
      */
-    public List<X509Certificate> getAllCertificates(String ksFileName, char[] ksPassword) throws NoSuchFieldException {
+    public List<X509Certificate> getAllCertificates() throws NoSuchFieldException {
         List<X509Certificate> certlist = new LinkedList<X509Certificate>();
         try {
-            KeyStore ks = this.loadKeyStore(ksFileName, ksPassword);
+            KeyStore ks = this.loadKeyStore();
             if(ks != null) {
-                List<String> keyAliases = this.getAllKeyAliases(ksFileName, ksPassword);
+                List<String> keyAliases = this.getAllAliases();
                 for(String s : keyAliases) {
                     certlist.add((X509Certificate) ks.getCertificate(s));
                 }
@@ -161,14 +171,13 @@ public class KeyStoreHandler {
 
     /**
      *
-     * @param ksFileName
-     * @param ksPassword
+     * @param alias
      * @return
      * @throws NoSuchFieldException
      */
-    public PrivateKey getPrivKey(String ksFileName, char[] ksPassword, String alias) throws NoSuchFieldException{
+    public PrivateKey getPrivKey(String alias) throws NoSuchFieldException{
         try {
-            KeyStore ks = this.loadKeyStore(ksFileName, ksPassword);
+            KeyStore ks = this.loadKeyStore();
             if(ks != null) {
                 return (PrivateKey) ks.getKey(alias, null);
             }
@@ -186,19 +195,17 @@ public class KeyStoreHandler {
 
     /**
      *
-     * @param ksFileName
-     * @param ksPassword
      * @param alias
      * @return
      */
-    public boolean removeCertificate(String ksFileName, char[] ksPassword, String alias) {
+    public boolean removeCertificate(String alias) {
         boolean success = false;
         KeyStore ks = null;
         try {
-             ks = this.loadKeyStore(ksFileName, ksPassword);
+             ks = this.loadKeyStore();
             if(ks.isCertificateEntry(alias)) {
                 ks.deleteEntry(alias);
-                this.storeKeyStore(ks, ksFileName, ksPassword);
+                this.storeKeyStore(ks);
                 success = true;
             }
         } catch (NoSuchFieldException e) {
@@ -217,18 +224,16 @@ public class KeyStoreHandler {
 
     /**
      *
-     * @param ksFileName
-     * @param ksPassword
      * @param alias
      * @return
      */
-    public boolean removePrivKey(String ksFileName, char[] ksPassword, String alias) {
+    public boolean removePrivKey(String alias) {
         boolean success = false;
         try {
-            KeyStore ks = this.loadKeyStore(ksFileName, ksPassword);
+            KeyStore ks = this.loadKeyStore();
             if(ks.isKeyEntry(alias)) {
                 ks.deleteEntry(alias);
-                this.storeKeyStore(ks, ksFileName, ksPassword);
+                this.storeKeyStore(ks);
                 success = true;
             }
         } catch (NoSuchFieldException e) {
@@ -247,12 +252,10 @@ public class KeyStoreHandler {
 
     /**
      *
-     * @param ksFileName
-     * @param ksPassword
      * @return can be null
      * @throws NoSuchFieldException
      */
-    protected KeyStore loadKeyStore(String ksFileName, char[] ksPassword) throws NoSuchFieldException {
+    protected KeyStore loadKeyStore() throws NoSuchFieldException {
         KeyStore ks = null;
         try {
             ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
@@ -262,9 +265,8 @@ public class KeyStoreHandler {
             e.printStackTrace();
         }
         try {
-            //String path = this.context.getFilesDir() + "/";
-            InputStream inputStream = this.context.openFileInput(ksFileName);
-            ks.load(inputStream, ksPassword);
+            InputStream inputStream = this.context.openFileInput(this.ksFileName);
+            ks.load(inputStream, this.ksPassword);
             inputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -279,30 +281,26 @@ public class KeyStoreHandler {
     /**
      * If anything goes wrong exceptions will be thrown.
      * @param ks
-     * @param ksFileName
-     * @param ksPassword
      * @throws IOException
      * @throws CertificateException
      * @throws NoSuchAlgorithmException
      * @throws KeyStoreException
      */
-    protected void storeKeyStore(KeyStore ks, String ksFileName, char[] ksPassword) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
-        OutputStream outputStream = this.context.openFileOutput(ksFileName, Context.MODE_PRIVATE);
-        ks.store(outputStream, ksPassword);
+    protected void storeKeyStore(KeyStore ks) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
+        OutputStream outputStream = this.context.openFileOutput(this.ksFileName, Context.MODE_PRIVATE);
+        ks.store(outputStream, this.ksPassword);
         outputStream.close();
     }
 
     /**
      *
-     * @param ksFileName
-     * @param ksPassword
-     * @return can return empty list if no aliases present
+     * @return can return empty list if no aliases present in the keystore
      * @throws KeyStoreException
      */
-    protected List<String> getAllKeyAliases(String ksFileName, char[] ksPassword) throws KeyStoreException {
+    protected List<String> getAllAliases() throws KeyStoreException {
         KeyStore ks = null;
         try {
-            ks = this.loadKeyStore(ksFileName, ksPassword);
+            ks = this.loadKeyStore();
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
