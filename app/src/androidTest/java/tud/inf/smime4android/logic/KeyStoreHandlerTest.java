@@ -17,6 +17,10 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
+import java.util.LinkedList;
+import java.util.List;
+
+import tud.inf.smime4android.R;
 
 
 /**
@@ -63,8 +67,10 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
         assertEquals(true, f.exists());
         boolean result1 = false;
+        int ks_size = -1;
         try {
             result1 = ksh.keyStorePresent();
+            ks_size = ksh.getKeyStoreSize();
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -75,6 +81,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             e.printStackTrace();
         }
         assertEquals(true, result1);
+        assertEquals(0, ks_size);
         targetcontext.deleteFile(this.ksFileName);
     }
 
@@ -104,11 +111,86 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     }
 
 
-    public void testGetPrivKey() {
+    public void testClientCertWithPrivKey() {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
         KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
         ksh.initKeyStore();
+
+        LinkedList genCertChainPrivKeyOutput = this.generateCertChainPrivKey();
+        Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.getFirst();
+        PrivateKey privKey = (PrivateKey) genCertChainPrivKeyOutput.getLast();
+
+        assertNotNull(chain[0]);
+        assertNotNull(chain[1]);
+        assertNotNull(chain[2]);
+
+        String privKeyPasswd = "4r3e2w1q";
+        ksh.addPrivKeyAndCertificate("keyalias", chain, privKey, privKeyPasswd.toCharArray());
+
+        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        PrivateKey pk = null;
+        int num_aliases = 0;
+        int ks_size = 0;
+        String alias_string = "";
+        try {
+            num_aliases = ksh1.getAllAliases().size();
+            alias_string = ksh1.getAllAliases().get(0);
+            ks_size = ksh1.getKeyStoreSize();
+            pk = ksh1.getPrivKey("keyalias");
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        assertEquals(1, ks_size);
+        assertEquals(1, num_aliases);
+        assertEquals("keyalias", alias_string);
+        assertEquals(privKey, pk);
+
+        targetcontext.deleteFile(this.ksFileName);
+    }
+
+    public void testNewCertificate() {
+        Context targetcontext = getInstrumentation().getTargetContext();
+        targetcontext.deleteFile(this.ksFileName);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        ksh.initKeyStore();
+
+        // get CA cert
+        Certificate cert = ((Certificate[]) this.generateCertChainPrivKey().getFirst())[2];
+        ksh.addCertificate("certalias", cert);
+
+        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        int ks_size = 0;
+        String certalias = "";
+        Certificate cert1 = null;
+        boolean alias_present = false;
+        try {
+            ks_size = ksh1.getKeyStoreSize();
+            alias_present = ksh.containsAlias("certalias");
+            //certalias = ksh1.getAllAliases().get(0);
+            cert1 = ksh1.getSingleCert("certalias");
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        //} catch (NoSuchFieldException e) {
+        //    e.printStackTrace();
+        }
+        assertEquals(1, ks_size);
+        assertEquals(true, alias_present);
+        //assertEquals("certalias", certalias);
+        assertEquals(cert, cert1);
+
+        targetcontext.deleteFile(this.ksFileName);
+    }
+
+    /**
+     *
+     * @return a list with 2 objects, as first the certificate chain, the second is the private key of the client certificate
+     */
+    private LinkedList<Object> generateCertChainPrivKey() {
+        Context targetcontext = getInstrumentation().getTargetContext();
+        String provider = targetcontext.getResources().getString(R.string.ks_provider);
 
         // personal keys
         RSAPublicKeySpec pubKeySpec = new RSAPublicKeySpec(
@@ -160,7 +242,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         PrivateKey privKey = null;
         PublicKey pubKey = null;
         try {
-            fact = KeyFactory.getInstance("RSA", "BC");
+            fact = KeyFactory.getInstance("RSA", provider);
             caPrivKey = fact.generatePrivate(caPrivKeySpec);
             caPubKey = fact.generatePublic(caPubKeySpec);
             intPrivKey = fact.generatePrivate(intPrivKeySpec);
@@ -184,29 +266,19 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         try {
             String issuer = "C=AU, O=The Legion of the Bouncy Castle, OU=Bouncy Primary Certificate";
             String subject0 = "C=AU, O=The Legion of the Bouncy Castle, OU=Bouncy Primary Certificate";
-            chain[2] = ksh.createMasterCert(caPubKey, caPrivKey, issuer, subject0);
+            chain[2] = KeyStoreUtil.createMasterCert(caPubKey, caPrivKey, issuer, subject0, provider);
             String[] issuedTo = {"AU", "The Legion of the Bouncy Castle", "Bouncy Intermediate Certificate", "feedback-crypto@bouncycastle.org"};
-            chain[1] = ksh.createIntermediateCert(intPubKey, caPrivKey, (X509Certificate) chain[2], issuedTo);
+            chain[1] = KeyStoreUtil.createIntermediateCert(intPubKey, caPrivKey, (X509Certificate) chain[2], issuedTo, provider);
             String[] signer = issuedTo;
             String[] subject1 = {"AU", "The Legion of the Bouncy Castle", "Melbourne", "Eric H. Echidna", "feedback-crypto@bouncycastle.org"};
-            chain[0] = ksh.createCert(pubKey, intPrivKey, intPubKey, signer, subject1);
+            chain[0] = KeyStoreUtil.createCert(pubKey, intPrivKey, intPubKey, signer, subject1, provider);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        assertNotNull(chain[0]);
-        assertNotNull(chain[1]);
-        assertNotNull(chain[2]);
-
-        String privKeyPasswd = "4r3e2w1q";
-        ksh.addPrivKeyAndCertificate("keyalias", chain, privKey, privKeyPasswd.toCharArray());
-        PrivateKey pk = null;
-        try {
-            pk = ksh.getPrivKey("keyalias");
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
-        assertEquals(privKey, pk);
-        targetcontext.deleteFile(this.ksFileName);
+        LinkedList<Object> output = new LinkedList<Object>();
+        output.add(chain);
+        output.add(privKey);
+        return output;
     }
 }

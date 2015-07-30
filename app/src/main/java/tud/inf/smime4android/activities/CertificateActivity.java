@@ -86,16 +86,17 @@ public class CertificateActivity extends ActionBarActivity {
                 }
 
                 char [] ksPassword = "bar".toCharArray(); // TODO dialog
+                //this.deleteFile(getString(R.string.ks_filename));   //TODO remove!!!
                 KeyStoreHandler ksh = new KeyStoreHandler(this, getString(R.string.ks_filename), ksPassword);
                 PrivateKey privKey = null; //TODO
                 char[] privKeyPasswd = "foo".toCharArray(); //TODO dialog
                 try {
+                    File f = new File(this.getFilesDir() + "/" + getString(R.string.ks_filename));
+                    list.add("file exists: " + f.exists());
+                    list.add("keystore present: " + ksh.keyStorePresent());
                     if(!ksh.keyStorePresent()) {
                         list.add("initializing keystore");
                         ksh.initKeyStore();
-                        File f = new File(this.getFilesDir() + "/" + getString(R.string.ks_filename));
-                        list.add("file exists: " + f.exists());
-                        list.add("keystore present: " + ksh.keyStorePresent());
                     }
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
@@ -106,7 +107,10 @@ public class CertificateActivity extends ActionBarActivity {
                 }
 
                 String alias = findCName(x509certs.get(x509certs.size() - 1).getSubjectDN().getName()); //CN=
-                ksh.addPrivKeyAndCertificate(alias, temporaryCertsList, privKey, privKeyPasswd);
+                //ksh.addPrivKeyAndCertificate(alias, temporaryCertsList, privKey, privKeyPasswd);
+                ksh.addCertificate(alias, temporaryCertsList[0]);
+
+                list.add(String.valueOf(ksh.getKeyStoreSize()));
 
                 certificateList.add(x509certs);
                 try {
@@ -126,6 +130,8 @@ public class CertificateActivity extends ActionBarActivity {
             } catch (CertificateNotYetValidException e) {
                 e.printStackTrace();
             } catch (CertificateException e) {
+                e.printStackTrace();
+            } catch (KeyStoreException e) {
                 e.printStackTrace();
             }
         }
