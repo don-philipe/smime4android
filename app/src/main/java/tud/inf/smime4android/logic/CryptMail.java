@@ -8,16 +8,18 @@ import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientInfoGenerator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.mail.smime.SMIMEEnveloped;
 import org.bouncycastle.mail.smime.SMIMEEnvelopedGenerator;
 import org.bouncycastle.mail.smime.SMIMEException;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
+import org.bouncycastle.util.encoders.Base64;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
+import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -29,12 +31,14 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.InternetHeaders;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 
 import tud.inf.smime4android.R;
 
 /**
+ * Has methods for en- and decrypting mails.
  * Created by don on 17.06.15.
  */
 public class CryptMail {
@@ -59,6 +63,9 @@ public class CryptMail {
      */
     public MimeMessage encrypt(String ksFile, char[] ksPassword, String keyAlias, String msgContent) {
         KeyStoreHandler ksh = new KeyStoreHandler(this.context, ksFile, ksPassword);
+        String provider = this.context.getResources().getString(R.string.ks_provider);
+        if (Security.getProvider(provider) == null)
+            Security.addProvider(new BouncyCastleProvider());
         Certificate[] chain = new Certificate[0];
         try {
             chain = ksh.getCertChain(keyAlias);
@@ -70,7 +77,7 @@ public class CryptMail {
         SMIMEEnvelopedGenerator gen = new SMIMEEnvelopedGenerator();
 
         try {
-            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator((X509Certificate)chain[0]).setProvider("BC"));
+            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator((X509Certificate)chain[0]).setProvider(provider));
         } catch (CertificateEncodingException e) {
             e.printStackTrace();
         }
@@ -80,9 +87,7 @@ public class CryptMail {
         // version 3 only.
         /*
         MessageDigest dig = MessageDigest.getInstance("SHA1", provider);
-
         dig.update(cert.getPublicKey().getEncoded());
-
         gen.addKeyTransRecipient(cert.getPublicKey(), dig.digest());
         */
 
@@ -96,7 +101,6 @@ public class CryptMail {
         try {
             msg.setText(msgContent);
 
-            String provider = this.context.getResources().getString(R.string.ks_provider);
             MimeBodyPart mp = gen.generate(msg, new JceCMSContentEncryptorBuilder(CMSAlgorithm.RC2_CBC).setProvider(provider).build());
 
             Address fromUser = new InternetAddress("\"Eric H. Echidna\"<eric@bouncycastle.org>");
@@ -124,12 +128,15 @@ public class CryptMail {
      *
      * @param ksFile keystore filename
      * @param ksPassword password of the keystore
-     * @param is
-     * @param content
-     * @return
+     * @param alias alias for private key and certificate chain
+     * @param content a base64 encoded string representing the encrypted mailtext
+     * @return the decrypted ciphertext
      */
-    public String decrypt(String ksFile, char[] ksPassword, /*InputStream is,*/ String content) {
+    public String decrypt(String ksFile, char[] ksPassword, String alias, String content) {
         String mailtext = "decrypted mail";
+        String provider = this.context.getResources().getString(R.string.ks_provider);
+        if (Security.getProvider(provider) == null)
+            Security.addProvider(new BouncyCastleProvider());
         SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
 
         Properties props = System.getProperties();
@@ -161,38 +168,49 @@ public class CryptMail {
             e.printStackTrace();
         }*/
 
-        X509Certificate reciCert = null;
+        Certificate[] reciCert = null;
         PrivateKey privKey = null;
         try {
             KeyStoreHandler ksh = new KeyStoreHandler(this.context, ksFile, ksPassword);
             List<X509Certificate> x509 = ksh.getAllCertificates();
-            //reciCert =
-            privKey = ksh.getPrivKey("alias");
+            reciCert = ksh.getCertChain(alias);
+            privKey = ksh.getPrivKey(alias);
         } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
             e.printStackTrace();
         }
 
         MimeBodyPart body = null;
         try {
-            body = new MimeBodyPart(null, content.getBytes());
-
+            // set empty header to avoid NullPointerException in toolkit.decrypt
+            InternetHeaders ih = new InternetHeaders();
+            ih.addHeaderLine("");
+            body = new MimeBodyPart(ih, Base64.decode(content));
         } catch (MessagingException e) {
             e.printStackTrace();
         }
-       if(reciCert!=null && privKey!=null) {
+       if(reciCert != null && privKey != null) {
            MimeBodyPart dec = new MimeBodyPart();
            try {
-               dec = toolkit.decrypt(body, new JceKeyTransRecipientId(reciCert), new JceKeyTransEnvelopedRecipient(privKey).setProvider("BC"));
+               JceKeyTransRecipientId jktci = new JceKeyTransRecipientId((X509Certificate)reciCert[0]);
+               JceKeyTransEnvelopedRecipient jkter = new JceKeyTransEnvelopedRecipient(privKey);
+               jkter.setProvider(provider);
+               dec = toolkit.decrypt(body, jktci , jkter);
+               if(dec == null)
+                   mailtext = "recipient ID cannot be matched";
+               else
+                   mailtext = dec.getContent().toString();
            } catch (SMIMEException e) {
                e.printStackTrace();
            } catch (MessagingException e) {
                e.printStackTrace();
+           } catch (IOException e) {
+               e.printStackTrace();
            }
-
-           mailtext = dec.toString();
-       }else {
-           mailtext = "Entschlüsselung leider nicht möglich";
+       } else {
+           mailtext = "missing recipient certificate and private key";
        }
-        return mailtext;
+       return mailtext;
     }
 }

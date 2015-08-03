@@ -117,7 +117,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
         ksh.initKeyStore();
 
-        LinkedList genCertChainPrivKeyOutput = this.generateCertChainPrivKey();
+        LinkedList genCertChainPrivKeyOutput = this.generateCertChainPrivKey(targetcontext);
         Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.getFirst();
         PrivateKey privKey = (PrivateKey) genCertChainPrivKeyOutput.getLast();
 
@@ -158,7 +158,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         ksh.initKeyStore();
 
         // get CA cert
-        Certificate cert = ((Certificate[]) this.generateCertChainPrivKey().getFirst())[2];
+        Certificate cert = ((Certificate[]) this.generateCertChainPrivKey(targetcontext).getFirst())[2];
         ksh.addCertificate("certalias", cert);
 
         KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
@@ -186,10 +186,9 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
     /**
      *
-     * @return a list with 2 objects, as first the certificate chain, the second is the private key of the client certificate
+     * @return a list with 2 objects, the first is the certificate chain, the second is the private key of the client certificate
      */
-    private LinkedList<Object> generateCertChainPrivKey() {
-        Context targetcontext = getInstrumentation().getTargetContext();
+    public static LinkedList<Object> generateCertChainPrivKey(Context targetcontext) {
         String provider = targetcontext.getResources().getString(R.string.ks_provider);
 
         // personal keys

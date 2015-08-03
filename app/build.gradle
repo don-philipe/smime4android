@@ -1,8 +1,9 @@
 apply plugin: 'com.android.application'
 android {
+    signingConfigs {
+    }
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
-
     defaultConfig {
         applicationId "tud.inf.smime4android"
         minSdkVersion 14
@@ -30,12 +31,12 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'org.bouncycastle:bcmail-jdk15on:1.52'
+    //provided 'org.bouncycastle:bcpkix-jdk15on:1.52'
     compile 'com.android.support:appcompat-v7:22.2.0'
     testCompile 'junit:junit:4.12'
-    //compile 'com.sun.mail:javax.mail:1.5.4'
     compile 'com.android.support:support-v4:22.2.0'
     testCompile 'org.hamcrest:hamcrest-library:1.3'
-    //testCompile 'org.mockito:mockito-core:2.0.26-beta'
+    //compile 'com.sun.mail:javax.mail:1.5.4'
     // following 3 files from https://code.google.com/p/javamail-android/downloads/list
     // https://stackoverflow.com/questions/6368704/java-lang-noclassdeffounderror-javax-activation-datahandler-in-android
     compile files('lib/activation.jar')

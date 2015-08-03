@@ -14,7 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import tud.inf.smime4android.logic.DecryptMail;
+import tud.inf.smime4android.logic.CryptMail;
 import tud.inf.smime4android.R;
 
 
@@ -42,15 +42,16 @@ public class MailviewActivity extends ActionBarActivity {
         String ksPath = this.getResources().getString(R.string.ks_filename);
         // TODO read password from stdin ;)
         String password = "1q2w3e4r";
+        String alias = "keyalias";
         if(intent.getData()!=null) {
             //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
 
-            String plaintext;
+            String ciphertext;
             try {
-                plaintext = readTextFromUri(this, intent.getData());
-                DecryptMail dm = new DecryptMail(this);
+                ciphertext = readTextFromUri(this, intent.getData());
+                CryptMail dm = new CryptMail(this);
                // content.setText(plaintext);
-                content.setText(dm.decrypt(ksPath,password.toCharArray(),this.getContentResolver().openInputStream(intent.getData()),plaintext));
+                content.setText(dm.decrypt(ksPath, password.toCharArray(), alias, ciphertext));
             } catch (IOException e) {
                 e.printStackTrace();
             }
