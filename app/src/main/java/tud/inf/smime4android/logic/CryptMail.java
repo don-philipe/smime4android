@@ -128,10 +128,11 @@ public class CryptMail {
      * @param ksFile keystore filename
      * @param ksPassword password of the keystore
      * @param alias alias for private key and certificate chain
+     * @param privKeyPasswd
      * @param content a base64 encoded string representing the encrypted mailtext
      * @return the decrypted ciphertext
      */
-    public String decrypt(String ksFile, char[] ksPassword, String alias, String content) {
+    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, String content) {
         String mailtext = "decrypted mail";
         String provider = this.context.getResources().getString(R.string.ks_provider);
         if (Security.getProvider(provider) == null)
@@ -173,7 +174,7 @@ public class CryptMail {
             KeyStoreHandler ksh = new KeyStoreHandler(this.context, ksFile, ksPassword);
             List<X509Certificate> x509 = ksh.getAllCertificates();
             reciCert = ksh.getCertChain(alias);
-            privKey = ksh.getPrivKey(alias);
+            privKey = ksh.getPrivKey(alias, privKeyPasswd);
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (KeyStoreException e) {

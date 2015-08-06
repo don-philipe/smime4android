@@ -171,9 +171,10 @@ public class KeyStoreHandler {
         try {
             KeyStore ks = this.loadKeyStore();
             if(ks != null) {
-                List<String> keyAliases = this.getAllAliases();
-                for(String s : keyAliases) {
-                    certlist.add((X509Certificate) ks.getCertificate(s));
+                List<String> allAliases = this.getAllAliases();
+                for(String s : allAliases) {
+                    if(ks.isCertificateEntry(s))
+                        certlist.add((X509Certificate) ks.getCertificate(s));
                 }
             }
             else
@@ -186,15 +187,16 @@ public class KeyStoreHandler {
 
     /**
      *
-     * @param alias
-     * @return
+     * @param alias for private key
+     * @param passwd private key password
+     * @return private key if present, null otherwise
      * @throws NoSuchFieldException
      */
-    public PrivateKey getPrivKey(String alias) throws NoSuchFieldException{
+    public PrivateKey getPrivKey(String alias, char[] passwd) throws NoSuchFieldException{
         try {
             KeyStore ks = this.loadKeyStore();
             if(ks != null) {
-                return (PrivateKey) ks.getKey(alias, null);
+                return (PrivateKey) ks.getKey(alias, passwd);
             }
             else
                 throw new NoSuchFieldException("can't get keystore");

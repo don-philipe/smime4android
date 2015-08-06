@@ -43,6 +43,7 @@ public class MailviewActivity extends ActionBarActivity {
         // TODO read password from stdin ;)
         String password = "1q2w3e4r";
         String alias = "keyalias";
+        String privKeyPasswd = "asdf";
         if(intent.getData()!=null) {
             //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
 
@@ -51,7 +52,7 @@ public class MailviewActivity extends ActionBarActivity {
                 ciphertext = readTextFromUri(this, intent.getData());
                 CryptMail dm = new CryptMail(this);
                // content.setText(plaintext);
-                content.setText(dm.decrypt(ksPath, password.toCharArray(), alias, ciphertext));
+                content.setText(dm.decrypt(ksPath, password.toCharArray(), alias, privKeyPasswd.toCharArray(), ciphertext));
             } catch (IOException e) {
                 e.printStackTrace();
             }

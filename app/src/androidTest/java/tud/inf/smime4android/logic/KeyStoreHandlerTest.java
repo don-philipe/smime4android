@@ -134,7 +134,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             num_aliases = ksh1.getAllAliases().size();
             alias_string = ksh1.getAllAliases().get(0);
             ks_size = ksh1.getKeyStoreSize();
-            pk = ksh1.getPrivKey("keyalias");
+            pk = ksh1.getPrivKey("keyalias", privKeyPasswd.toCharArray());
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (NoSuchFieldException e) {

@@ -49,7 +49,7 @@ public class CryptMailTest extends InstrumentationTestCase {
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("myalias", chain, privkey, privKeyPasswd.toCharArray());
 
-        String plaintext = dm.decrypt(this.ksFileName, this.ksPasswd, "myalias", ciphertext);
+        String plaintext = dm.decrypt(this.ksFileName, this.ksPasswd, "myalias", privKeyPasswd.toCharArray(), ciphertext);
         assertEquals("hello world!", plaintext);
 
         targetcontext.deleteFile(this.ksFileName);
@@ -80,7 +80,7 @@ public class CryptMailTest extends InstrumentationTestCase {
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("myalias", chain, privkey, privKeyPasswd.toCharArray());
 
-        String plaintext = cm.decrypt(this.ksFileName, this.ksPasswd, "myalias", ciphertext);
+        String plaintext = cm.decrypt(this.ksFileName, this.ksPasswd, "myalias", privKeyPasswd.toCharArray(), ciphertext);
         assertEquals("hello world!", plaintext);
 
         targetcontext.deleteFile(this.ksFileName);
