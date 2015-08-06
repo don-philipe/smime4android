@@ -18,7 +18,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.LinkedList;
-import java.util.List;
 
 import tud.inf.smime4android.R;
 
@@ -40,7 +39,6 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         assertEquals(this.ksFileName, targetcontext.fileList()[0]);
         targetcontext.deleteFile(this.ksFileName);
     }
-
 
     public void testKeyStorePresent() {
         Context targetcontext = getInstrumentation().getTargetContext();
@@ -110,16 +108,15 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         targetcontext.deleteFile(this.ksFileName);
     }
 
-
     public void testClientCertWithPrivKey() {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
         KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
         ksh.initKeyStore();
 
-        LinkedList genCertChainPrivKeyOutput = this.generateCertChainPrivKey(targetcontext);
-        Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.getFirst();
-        PrivateKey privKey = (PrivateKey) genCertChainPrivKeyOutput.getLast();
+        LinkedList genCertChainPrivKeyOutput = this.generateCertChainPrivPubKey(targetcontext);
+        Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.get(0);
+        PrivateKey privKey = (PrivateKey) genCertChainPrivKeyOutput.get(1);
 
         assertNotNull(chain[0]);
         assertNotNull(chain[1]);
@@ -158,7 +155,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         ksh.initKeyStore();
 
         // get CA cert
-        Certificate cert = ((Certificate[]) this.generateCertChainPrivKey(targetcontext).getFirst())[2];
+        Certificate cert = ((Certificate[]) this.generateCertChainPrivPubKey(targetcontext).getFirst())[2];
         ksh.addCertificate("certalias", cert);
 
         KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
@@ -186,9 +183,11 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
     /**
      *
-     * @return a list with 2 objects, the first is the certificate chain, the second is the private key of the client certificate
+     * @return a list with 3 objects, the first is the certificate chain,
+     * the second is the private key of the client certificate,
+     * third the public key of the client
      */
-    public static LinkedList<Object> generateCertChainPrivKey(Context targetcontext) {
+    public static LinkedList<Object> generateCertChainPrivPubKey(Context targetcontext) {
         String provider = targetcontext.getResources().getString(R.string.ks_provider);
 
         // personal keys
@@ -278,6 +277,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         LinkedList<Object> output = new LinkedList<Object>();
         output.add(chain);
         output.add(privKey);
+        output.add(pubKey);
         return output;
     }
 }

@@ -30,6 +30,7 @@ import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.InternetHeaders;
 import javax.mail.internet.MimeBodyPart;
@@ -66,19 +67,16 @@ public class CryptMail {
         String provider = this.context.getResources().getString(R.string.ks_provider);
         if (Security.getProvider(provider) == null)
             Security.addProvider(new BouncyCastleProvider());
-        Certificate[] chain = new Certificate[0];
-        try {
-            chain = ksh.getCertChain(keyAlias);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
 
         // create the generator for creating an smime/encrypted message
         SMIMEEnvelopedGenerator gen = new SMIMEEnvelopedGenerator();
 
         try {
-            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator((X509Certificate)chain[0]).setProvider(provider));
+            Certificate[] chain = ksh.getCertChain(keyAlias);
+            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator((X509Certificate) chain[0]).setProvider(provider));
         } catch (CertificateEncodingException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
             e.printStackTrace();
         }
 
@@ -91,15 +89,16 @@ public class CryptMail {
         gen.addKeyTransRecipient(cert.getPublicKey(), dig.digest());
         */
 
-        // create the base for our message
-        MimeBodyPart msg = new MimeBodyPart();
         // Get a Session object and create the mail message
         Properties props = System.getProperties();
         Session session = Session.getDefaultInstance(props, null);
+        // create the base for our message
+        MimeMessage msg = new MimeMessage(session);
         MimeMessage body = new MimeMessage(session);
 
         try {
             msg.setText(msgContent);
+            msg.saveChanges();
 
             MimeBodyPart mp = gen.generate(msg, new JceCMSContentEncryptorBuilder(CMSAlgorithm.RC2_CBC).setProvider(provider).build());
 

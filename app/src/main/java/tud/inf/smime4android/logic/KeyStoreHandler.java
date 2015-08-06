@@ -13,6 +13,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -122,6 +123,30 @@ public class KeyStoreHandler {
         try {
             KeyStore ks = this.loadKeyStore();
             ks.setCertificateEntry(alias, cert);
+            this.storeKeyStore(ks);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     *
+     * @param alias
+     * @param pubKey
+     * @param certs
+     */
+    public void addPubKey(String alias, PublicKey pubKey, Certificate[] certs) {
+        try {
+            KeyStore ks = this.loadKeyStore();
+            ks.setKeyEntry(alias, pubKey, null, certs);
             this.storeKeyStore(ks);
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -349,7 +374,7 @@ public class KeyStoreHandler {
     }
 
     /**
-     *
+     * Return every alias, no matter if its a certificate or a key alias.
      * @return can return empty list if no aliases present in the keystore
      * @throws KeyStoreException
      */
@@ -363,10 +388,7 @@ public class KeyStoreHandler {
         Enumeration e = ks.aliases();
         List<String> keyAliases = new LinkedList<String>();
         while (e.hasMoreElements()) {
-            String alias = (String) e.nextElement();
-            if(ks.isKeyEntry(alias)) {
-                keyAliases.add(alias);
-            }
+            keyAliases.add((String) e.nextElement());
         }
         return keyAliases;
     }
