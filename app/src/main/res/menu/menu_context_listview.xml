@@ -4,8 +4,6 @@
     tools:context="tud.inf.smime4android.activities.MainActivity">
     <item android:id="@+id/menu_context_details" android:title="@string/menu_context_details"
         android:orderInCategory="1" app:showAsAction="never" />
-    <item android:id="@+id/menu_context_root" android:title="@string/menu_context_root"
-        android:orderInCategory="3" app:showAsAction="never" />
     <item android:id="@+id/menu_context_delete" android:title="@string/menu_context_delete"
         android:orderInCategory="4" app:showAsAction="never" />
 </menu>

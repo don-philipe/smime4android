@@ -41,7 +41,7 @@ public class CryptMailTest extends InstrumentationTestCase {
                             "bQAAAAAAAAAAAAA=";
 
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.ksPasswd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         ksh.initKeyStore();
         LinkedList genCertChainPrivKeyOutput = KeyStoreHandlerTest.generateCertChainPrivPubKey(targetcontext);
         Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.get(0);
@@ -72,7 +72,7 @@ public class CryptMailTest extends InstrumentationTestCase {
                             "/hVJ/ocDzfGkKYg30XByJNqfhwQIhaetMPv3yjoAAAAAAAAAAAAA";
 
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.ksPasswd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         ksh.initKeyStore();
         LinkedList genCertChainPrivKeyOutput = KeyStoreHandlerTest.generateCertChainPrivPubKey(targetcontext);
         Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.getFirst();
@@ -90,7 +90,7 @@ public class CryptMailTest extends InstrumentationTestCase {
         Context targetcontext = getInstrumentation().getTargetContext();
         CryptMail dm = new CryptMail(targetcontext);
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.ksPasswd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         ksh.initKeyStore();
         LinkedList genCertChainPrivKeyOutput = KeyStoreHandlerTest.generateCertChainPrivPubKey(targetcontext);
         Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.get(0);

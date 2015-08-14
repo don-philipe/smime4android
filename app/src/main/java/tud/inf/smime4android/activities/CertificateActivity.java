@@ -1,36 +1,53 @@
 package tud.inf.smime4android.activities;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Base64;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -39,6 +56,7 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import tud.inf.smime4android.R;
 import tud.inf.smime4android.logic.KeyStoreHandler;
@@ -51,96 +69,121 @@ public class CertificateActivity extends ActionBarActivity {
     public final ArrayList<ArrayList<X509Certificate>> certificateList = new ArrayList<ArrayList<X509Certificate>>();
     public ListView listView = null;
     public StableArrayAdapter adapter = null;
+    private KeyStoreHandler ksh = null;
+    private EditText alias;
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Intent intent = getIntent();
+
+        ksh = new KeyStoreHandler(getApplicationContext());
+        ksh.initKeyStore();
+
+        final Intent intent = getIntent();
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_certificate);
 
+//        final Button bibabutzebutton = (Button) findViewById(R.id.button);
+//        bibabutzebutton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Context context = getApplicationContext();
+//                int duration = Toast.LENGTH_SHORT;
+//                 int size = ksh.keyStoreSize();
+//
+//                String text = "size " + size;
+//                Toast toast = Toast.makeText(context, text, duration);
+//                toast.show();
+//
+//            }
+//        });
+
         if (intent.getData() != null) {
-            //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
 
-            String cert;
+            AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+            builder.setTitle("Enter password for private Key");
+            LayoutInflater inflater = getLayoutInflater();
+            View dialogView = inflater.inflate(R.layout.dialog_addkeystore, null);
+            alias = (EditText) dialogView.findViewById(R.id.keystore_password);
+            builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    String password = alias.getText().toString();
+                    addCertificateToKS(intent.getData(), password);
+                }
+            });
+            builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    // User cancelled the dialog
+                }
+            });
+            builder.setView(dialogView);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+
+            // TODO dialog
+
+        }
+            // gief password
+
+              listView = (ListView) findViewById(R.id.certificates_listView);
+            adapter = new StableArrayAdapter(this, list);
+            listView.setEmptyView(findViewById(R.id.empty_listview));
+            listView.setAdapter(adapter);
+            updateList();
+            registerForContextMenu(findViewById(R.id.certificates_listView));
+    }
+
+    private void addCertificateToKS(Uri data, String password) {
+
+        boolean accessToKeyPair;
+        KeyPair keyPair = null;
+        List<X509Certificate> certificates = new ArrayList<X509Certificate>();
+
+        try {
+            keyPair = loadKeysFromFile(getFIS(this, data), password);
+            accessToKeyPair = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            //pw falsch
+            Toast toast = Toast.makeText(getApplicationContext(), "Wrong password", Toast.LENGTH_SHORT);
+            toast.show();
+            accessToKeyPair = false;
+        }
+
+        if (accessToKeyPair){
             try {
-                cert = readTextFromUri(this, intent.getData());
-
-
-//                android.net.Uri auri = intent.getData();
-//                URI juri = new java.net.URI(URLEncoder.encode(auri.toString(), "UTF-8"));
-//                File file = new File(intent.getData().getPath());
-//                loadX509CertificateFromFile(new FileInputStream()this.getContentResolver().openInputStream(intent.getData()));
-
-//                cert = loadX509CertificateFromFile(getFIS(this,intent.getData())).getSigAlgName();
-
-                ArrayList<X509Certificate> x509certs = loadX509CertificateFromFile(getFIS(this, intent.getData()));
-                //TODO import cert to keystore
-
-//                cert = x509cert.getType()+"\n"+x509cert.getNotAfter();
-
-                Certificate[] temporaryCertsList = new Certificate[x509certs.size()];
-                int j = 0;
-                for (int i = x509certs.size() - 1; i >= 0; i--) {
-                    temporaryCertsList[j++] = x509certs.get(i);
-                }
-
-                char [] ksPassword = "bar".toCharArray(); // TODO dialog
-                //this.deleteFile(getString(R.string.ks_filename));   //TODO remove!!!
-                KeyStoreHandler ksh = new KeyStoreHandler(this, getString(R.string.ks_filename), ksPassword);
-                PrivateKey privKey = null; //TODO
-                char[] privKeyPasswd = "foo".toCharArray(); //TODO dialog
-                try {
-                    File f = new File(this.getFilesDir() + "/" + getString(R.string.ks_filename));
-                    list.add("file exists: " + f.exists());
-                    list.add("keystore present: " + ksh.keyStorePresent());
-                    if(!ksh.keyStorePresent()) {
-                        list.add("initializing keystore");
-                        ksh.initKeyStore();
-                    }
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                } catch (NoSuchProviderException e) {
-                    e.printStackTrace();
-                } catch (KeyStoreException e) {
-                    e.printStackTrace();
-                }
-
-                String alias = findCName(x509certs.get(x509certs.size() - 1).getSubjectDN().getName()); //CN=
-                //ksh.addPrivKeyAndCertificate(alias, temporaryCertsList, privKey, privKeyPasswd);
-                ksh.addCertificate(alias, temporaryCertsList[0]);
-
-                list.add(String.valueOf(ksh.getKeyStoreSize()));
-
-                certificateList.add(x509certs);
-                try {
-                    for(X509Certificate x509 : ksh.getAllCertificates()) {
-                        list.add(findCName(x509.getSubjectDN().getName()));
-                    }
-                } catch (NoSuchFieldException e) {
-                    e.printStackTrace();
-                }
-
-//                tv.setText(certs);
-
+                certificates = loadX509CertificateFromFile(getFIS(this, data));
             } catch (IOException e) {
-                e.printStackTrace();
-            } catch (CertificateExpiredException e) {
-                e.printStackTrace();
-            } catch (CertificateNotYetValidException e) {
                 e.printStackTrace();
             } catch (CertificateException e) {
                 e.printStackTrace();
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
             }
-        }
 
-        listView = (ListView) findViewById(R.id.certificates_listView);
-        adapter = new StableArrayAdapter(this, list);
-        listView.setEmptyView(findViewById(R.id.empty_listview));
-        listView.setAdapter(adapter);
-        registerForContextMenu(findViewById(R.id.certificates_listView));
+            Certificate [] certArray = new Certificate[certificates.size()];
+
+            for (int i = 0; i<certificates.size(); i++){
+                certArray[i] = certificates.get(i);
+            }
+            ksh.addPrivKeyAndCertificate("alias", certArray, keyPair.getPrivate(), password.toCharArray());
+
+            updateList();
+            // TODO Add to list
+        }
+    }
+
+    private void updateList() {
+        List<X509Certificate> certificates = new ArrayList<X509Certificate>();
+        list.clear();
+        try {
+            certificates = ksh.getAllCertificates();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        for (int i = 0; i<certificates.size(); i++){
+            list.add( findCName(certificates.get(i).getSubjectDN().getName().toString()));
+        }
+        adapter.notifyDataSetChanged();
     }
 
     @Override
@@ -164,14 +207,27 @@ public class CertificateActivity extends ActionBarActivity {
     public boolean onContextItemSelected(final MenuItem item) {
         final AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         switch (item.getItemId()) {
-            case R.id.menu_context_root: {
-                onCreateDialog(getString(R.string.menu_context_root), info.position).show();
-            }
-            break;
             case R.id.menu_context_details: {
-                ArrayList<X509Certificate> tempList = certificateList.get(info.position);
-                callCertificateViewerActivity(tempList.get(tempList.size() - 1));
+//                ArrayList<X509Certificate> tempList = certificateList.get(info.position);
+//                callCertificateViewerActivity(tempList.get(tempList.size() - 1));
+                String alias = list.get(info.position);
+                String cert = "";
+//                try {
+//                   cert = ksh.getSingleCert()
+//                } catch (KeyStoreException e) {
+//                    e.printStackTrace();
+//                }
+
+                Context context = getApplicationContext();
+
+                int duration = Toast.LENGTH_SHORT;
+
+
+                Toast toast = Toast.makeText(context, cert, duration);
+                toast.show();
+
             }
+
             break;
             case R.id.menu_context_delete: {
                 AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
@@ -179,8 +235,10 @@ public class CertificateActivity extends ActionBarActivity {
                         .setTitle(R.string.dialog_delete_item_title);
                 builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        adapter.remove(adapter.getItem(info.position));
-                        certificateList.remove(info.position);
+                      ksh.removeCertificate("alias");
+                        //TODO hardcoded, find out alias and delete it
+                        updateList();
+
                     }
                 });
                 builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
@@ -188,6 +246,7 @@ public class CertificateActivity extends ActionBarActivity {
                         // User clicked button
                     }
                 });
+
 
                 builder.create().show();
 
@@ -298,6 +357,7 @@ public class CertificateActivity extends ActionBarActivity {
     public static ArrayList<X509Certificate> loadX509CertificateFromFile(FileInputStream x509CertificateFile) throws IOException,
             CertificateNotYetValidException, CertificateExpiredException, CertificateException {
 
+
         // Check availablity and readability of the given file first
 //        if (!x509CertificateFile.exists()) {
 //            String message = "The given file \"" + x509CertificateFile + "\" does not exist.";
@@ -328,16 +388,17 @@ public class CertificateActivity extends ActionBarActivity {
 //        }
 
         ArrayList<X509Certificate> x509certs = new ArrayList<X509Certificate>();
+        Certificate[] certArray = new Certificate[certificates.size()];
         for (Certificate c : certificates) {
             try {
                 ((X509Certificate) c).checkValidity();
-
                 x509certs.add((X509Certificate) c);
             } catch (CertificateExpiredException e) {
                 //ignore
             } catch (CertificateNotYetValidException e) {
                 //ignore
             }
+
         }
 //        X509Certificate x509Certificate = (X509Certificate) certificate;
         // Lastly checks if the certificate is (still) valid.
@@ -346,6 +407,27 @@ public class CertificateActivity extends ActionBarActivity {
 //        x509Certificate.checkValidity();
 
         return x509certs;
+    }
+
+
+    public static KeyPair loadKeysFromFile(FileInputStream x509KeyFile, String password) throws IOException {
+        Reader reader = new InputStreamReader(x509KeyFile);
+        PEMParser pemParser = new PEMParser(reader);
+        //TODO really!?
+
+        Object object = pemParser.readObject();
+        PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(password.toCharArray());
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+        KeyPair kp;
+        if (object instanceof PEMEncryptedKeyPair) {
+            System.out.println("Encrypted key - we will use provided password");
+            kp = converter.getKeyPair(((PEMEncryptedKeyPair) object).decryptKeyPair(decProv));
+        } else {
+            System.out.println("Unencrypted key - no password needed");
+            kp = converter.getKeyPair((PEMKeyPair) object);
+        }
+
+        return kp;
     }
 
     private String findCName(String string) {
@@ -399,5 +481,96 @@ public class CertificateActivity extends ActionBarActivity {
         certificateIntent.putExtra("cName", cName);
         startActivity(certificateIntent);
 
+    }
+
+    public void performFileSearch() {
+
+        // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file
+        // browser.
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+
+        // Filter to only show results that can be "opened", such as a
+        // file (as opposed to a list of contacts or timezones)
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        // Filter to show only images, using the image MIME data type.
+        // If one wanted to search for ogg vorbis files, the type would be "audio/ogg".
+        // To search for all documents available via installed storage providers,
+        // it would be "*/*".
+        intent.setType("application/x-pkcs12/*");
+
+        startActivityForResult(intent, 42);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode,
+                                 Intent resultData) {
+
+        // The ACTION_OPEN_DOCUMENT intent was sent with the request code
+        // READ_REQUEST_CODE. If the request code seen here doesn't match, it's the
+        // response to some other intent, and the code below shouldn't run at all.
+
+        if (requestCode == 42 && resultCode == Activity.RESULT_OK) {
+            // The document selected by the user won't be returned in the intent.
+            // Instead, a URI to that document will be contained in the return intent
+            // provided to this method as a parameter.
+            // Pull that URI using resultData.getData().
+            Uri uri = null;
+            if (resultData != null) {
+                uri = resultData.getData();
+//                Log.i( "Uri: " + uri.toString());
+//                showImage(uri);
+            }
+
+            String filename = getRealPathFromURI(getApplicationContext(), uri);
+            String thisLine, ret = "";
+            KeyStore ks = null;
+            try {
+                ks = KeyStore.getInstance("PKCS12");
+            } catch (KeyStoreException e) {
+                e.printStackTrace();
+                try {
+                    ks.load(new FileInputStream(uri.getPath()),"Wkf%s3rrL".toCharArray());
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                } catch (NoSuchAlgorithmException e1) {
+                    e1.printStackTrace();
+                } catch (CertificateException e1) {
+                    e1.printStackTrace();
+                }
+                try {
+                    Key key = ks.getKey("1", "password".toCharArray());
+                } catch (KeyStoreException e1) {
+                    e1.printStackTrace();
+                } catch (NoSuchAlgorithmException e1) {
+                    e1.printStackTrace();
+                } catch (UnrecoverableKeyException e1) {
+                    e1.printStackTrace();
+                }
+                Certificate[] cc = new Certificate[0];
+                try {
+                    cc = ks.getCertificateChain("1");
+                } catch (KeyStoreException e1) {
+                    e1.printStackTrace();
+                }
+                X509Certificate certificate1 = (X509Certificate) cc[0];//Here it throws  java.lang.NullPointerException
+                ret += certificate1.getNotAfter();
+                ret += certificate1.getNotBefore();
+            }
+    }}
+
+    public String getRealPathFromURI(Context context, Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = { MediaStore.Images.Media.DATA };
+            cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
 }

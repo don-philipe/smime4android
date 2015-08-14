@@ -63,7 +63,7 @@ public class CryptMail {
      * @return
      */
     public MimeMessage encrypt(String ksFile, char[] ksPassword, String keyAlias, String msgContent) {
-        KeyStoreHandler ksh = new KeyStoreHandler(this.context, ksFile, ksPassword);
+        KeyStoreHandler ksh = new KeyStoreHandler(this.context);
         String provider = this.context.getResources().getString(R.string.ks_provider);
         if (Security.getProvider(provider) == null)
             Security.addProvider(new BouncyCastleProvider());
@@ -171,8 +171,8 @@ public class CryptMail {
         Certificate[] reciCert = null;
         PrivateKey privKey = null;
         try {
-            KeyStoreHandler ksh = new KeyStoreHandler(this.context, ksFile, ksPassword);
-            List<X509Certificate> x509 = ksh.getAllCertificates();
+            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
+//            List<X509Certificate> x509 = ksh.getAllCertificates();
             reciCert = ksh.getCertChain(alias);
             privKey = ksh.getPrivKey(alias, privKeyPasswd);
         } catch (NoSuchFieldException e) {

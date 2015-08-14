@@ -31,42 +31,45 @@ import tud.inf.smime4android.R;
 public class KeyStoreHandler {
 
     private Context context;
-    private final String ks_type;
-    private final String ks_provider;
-    private final String ksFileName;
-    private final char[] ksPassword;
+    private final String ANDROID_KEYSTORE = "AndroidKeyStore";
+    private KeyStore ks;
 
-    public KeyStoreHandler(Context context, String fileName, char[] password) {
+    public KeyStoreHandler(Context context) {
         this.context = context;
-        this.ks_type = this.context.getResources().getString(R.string.ks_type);
-        this.ks_provider = this.context.getResources().getString(R.string.ks_provider);
-        this.ksFileName = fileName;
-        this.ksPassword = password;
+        ks = null;
     }
 
     /**
      *
      */
     public void initKeyStore() {
+        ks = null;
         try {
-            KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
-            ks.load(null, this.ksPassword);
-            this.storeKeyStore(ks);
+            ks = KeyStore.getInstance(ANDROID_KEYSTORE);
         } catch (KeyStoreException e) {
             e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
+        }
+        try {
+            ks.load(null);
+        } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (CertificateException e) {
             e.printStackTrace();
         }
     }
 
+
+    public int keyStoreSize() {
+        int result = 0;
+        try {
+           result = ks.size();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
     /**
      *
      * @return
@@ -76,15 +79,16 @@ public class KeyStoreHandler {
      * @throws KeyStoreException
      */
     public boolean keyStorePresent() throws CertificateException, NoSuchAlgorithmException, NoSuchProviderException, KeyStoreException {
-        KeyStore ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
-        File keystorefile = new File(this.ksFileName);
-        try {
-            ks.load(new FileInputStream(this.context.getFilesDir() + "/" + keystorefile), this.ksPassword);
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
+//        KeyStore ks = KeyStore.getInstance(ANDROID_KEYSTORE);
+//        File keystorefile = new File(this.ksFileName);
+//        try {
+//            ks.load(new FileInputStream(this.context.getFilesDir() + "/" + keystorefile), this.ksPassword);
+//            return true;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+        return true;
     }
 
     /**
@@ -96,8 +100,7 @@ public class KeyStoreHandler {
      */
     public void addPrivKeyAndCertificate(String alias, Certificate[] certs, PrivateKey privkey, char[] keyPassword) {
         try {
-            KeyStore ks = this.loadKeyStore();
-            ks.setKeyEntry(alias, privkey, keyPassword, certs);
+            ks.setKeyEntry(alias, privkey, null, certs);
             this.storeKeyStore(ks);
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -108,8 +111,6 @@ public class KeyStoreHandler {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
     }
@@ -168,13 +169,18 @@ public class KeyStoreHandler {
      */
     public List<X509Certificate> getAllCertificates() throws NoSuchFieldException {
         List<X509Certificate> certlist = new LinkedList<X509Certificate>();
+        Certificate[] certArray;
         try {
-            KeyStore ks = this.loadKeyStore();
             if(ks != null) {
                 List<String> allAliases = this.getAllAliases();
                 for(String s : allAliases) {
-                    if(ks.isCertificateEntry(s))
-                        certlist.add((X509Certificate) ks.getCertificate(s));
+
+                        certArray = ks.getCertificateChain(s);
+                        for (int i = 0; i < certArray.length; i++){
+                            certlist.add((X509Certificate) certArray[i]);
+                        }
+//                        certlist.add((X509Certificate) ks.getCertificate(s));
+
                 }
             }
             else
@@ -217,24 +223,22 @@ public class KeyStoreHandler {
      */
     public boolean removeCertificate(String alias) {
         boolean success = false;
-        KeyStore ks = null;
+
         try {
-             ks = this.loadKeyStore();
-            if(ks.isCertificateEntry(alias)) {
                 ks.deleteEntry(alias);
                 this.storeKeyStore(ks);
                 success = true;
-            }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+
+
         } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+
         }
         return success;
     }
@@ -273,25 +277,22 @@ public class KeyStoreHandler {
      * @throws NoSuchFieldException
      */
     protected KeyStore loadKeyStore() throws NoSuchFieldException {
-        KeyStore ks = null;
         try {
-            ks = KeyStore.getInstance(this.ks_type, this.ks_provider);
+            ks = KeyStore.getInstance("AndroidKeyStore");
         } catch (KeyStoreException e) {
             e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
         }
-        try {
-            InputStream inputStream = this.context.openFileInput(this.ksFileName);
-            ks.load(inputStream, this.ksPassword);
-            inputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            InputStream inputStream = this.context.openFileInput(this.ksFileName);
+//            ks.load(inputStream, this.ksPassword);
+//            inputStream.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        } catch (CertificateException e) {
+//            e.printStackTrace();
+//        }
         return ks;
     }
 
@@ -304,10 +305,10 @@ public class KeyStoreHandler {
      * @throws KeyStoreException
      */
     protected void storeKeyStore(KeyStore ks) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
-        OutputStream outputStream = this.context.openFileOutput(this.ksFileName, Context.MODE_PRIVATE);
-        ks.store(outputStream, this.ksPassword);
-        outputStream.flush();
-        outputStream.close();
+//        OutputStream outputStream = this.context.openFileOutput(this.ksFileName, Context.MODE_PRIVATE);
+//        ks.store(outputStream, this.ksPassword);
+//        outputStream.flush();
+//        outputStream.close();
     }
 
     /**
@@ -381,12 +382,6 @@ public class KeyStoreHandler {
      * @throws KeyStoreException
      */
     protected List<String> getAllAliases() throws KeyStoreException {
-        KeyStore ks = null;
-        try {
-            ks = this.loadKeyStore();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
         Enumeration e = ks.aliases();
         List<String> keyAliases = new LinkedList<String>();
         while (e.hasMoreElements()) {
@@ -394,4 +389,5 @@ public class KeyStoreHandler {
         }
         return keyAliases;
     }
+
 }

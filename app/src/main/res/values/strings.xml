@@ -17,6 +17,12 @@
     <string name="dialog_close">Close</string>
     <string name="dialog_delete_item_title">Confirmation</string>
     <string name="dialog_delete_item_text">Do you really want to remove this certificate and its root certificates?</string>
+    <string name="dialog_keystore_alias">Enter Keystore alias</string>
+    <string name="dialog_keystore_filename">Keystore file name</string>
+    <string name="dialog_keystore_password">Keystore password</string>
+
+
+
     <string name="about_header">About</string>
     <string name="about_content">blabla</string>
     <string name="hello_world">The main window.</string>

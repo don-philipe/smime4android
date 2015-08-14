@@ -33,7 +33,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     public void testInitKeyStore() {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         assertEquals(0, targetcontext.fileList().length);
         ksh.initKeyStore();
         assertEquals(this.ksFileName, targetcontext.fileList()[0]);
@@ -43,7 +43,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     public void testKeyStorePresent() {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         File f = new File(targetcontext.getFilesDir() + "/" + this.ksFileName);
 
         assertEquals(false, f.exists());
@@ -87,10 +87,10 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
 
-        KeyStoreHandler ksh0 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh0 = new KeyStoreHandler(targetcontext);
         ksh0.initKeyStore();
 
-        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext);
         ksh1.initKeyStore();
         boolean result1 = false;
         try {
@@ -111,7 +111,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     public void testClientCertWithPrivKey() {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         ksh.initKeyStore();
 
         LinkedList genCertChainPrivKeyOutput = this.generateCertChainPrivPubKey(targetcontext);
@@ -125,7 +125,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("keyalias", chain, privKey, privKeyPasswd.toCharArray());
 
-        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext);
         PrivateKey pk = null;
         int num_aliases = 0;
         int ks_size = 0;
@@ -151,14 +151,14 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     public void testNewCertificate() {
         Context targetcontext = getInstrumentation().getTargetContext();
         targetcontext.deleteFile(this.ksFileName);
-        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         ksh.initKeyStore();
 
         // get CA cert
         Certificate cert = ((Certificate[]) this.generateCertChainPrivPubKey(targetcontext).getFirst())[2];
         ksh.addCertificate("certalias", cert);
 
-        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext, this.ksFileName, this.passwd);
+        KeyStoreHandler ksh1 = new KeyStoreHandler(targetcontext);
         int ks_size = 0;
         String certalias = "";
         Certificate cert1 = null;
