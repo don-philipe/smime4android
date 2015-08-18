@@ -2,18 +2,18 @@ package tud.inf.smime4android.logic;
 
 import android.content.Context;
 
-import java.io.File;
-import java.io.FileInputStream;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -374,6 +374,46 @@ public class KeyStoreHandler {
             e.printStackTrace();
         }
         return ks.getCertificateChain(alias);
+    }
+
+    /**
+     * Load a pkcs12 file, usually ending with ".p12".
+     * Private keys which have already a password will be protected with the same password in local
+     * keystore.
+     * @param byteArrayInputStream input stream to pkcs12 file.
+     * @param ksPasswd password to pkcs12 file.
+     * @param privKeyPasswd password to recover the private key.
+     * @throws IOException if a problem occurred while reading from the stream.
+     * @throws CertificateException if an exception occurred while loading the certificates of this
+     * KeyStore.
+     * @throws UnrecoverableKeyException in case the private key cannot be recovered, usually this
+     * is the case when the wrong password is passed.
+     */
+    public void importPkcs12File(ByteArrayInputStream byteArrayInputStream, char[] ksPasswd, char[] privKeyPasswd)
+            throws IOException, CertificateException, UnrecoverableKeyException {
+        String provider = this.context.getResources().getString(R.string.ks_provider);
+        if (Security.getProvider(provider) == null)
+            Security.addProvider(new BouncyCastleProvider());
+        try {
+            KeyStore pkcs12 = KeyStore.getInstance("PKCS12", provider);
+            pkcs12.load(byteArrayInputStream, ksPasswd);
+            Enumeration<String> e = pkcs12.aliases();
+            while(e.hasMoreElements()) {
+                String alias = e.nextElement();
+                Certificate[] certchain = pkcs12.getCertificateChain(alias);
+                PrivateKey pk = (PrivateKey) pkcs12.getKey(alias, privKeyPasswd);
+                if(pk != null)
+                    this.ks.setKeyEntry(alias, pk, privKeyPasswd, certchain);
+                else if(certchain != null)   // its just an intermediate or root certificate we got
+                    this.ks.setCertificateEntry(alias, certchain[0]);
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

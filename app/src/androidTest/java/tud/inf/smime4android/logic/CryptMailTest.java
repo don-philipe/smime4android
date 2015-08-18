@@ -75,8 +75,8 @@ public class CryptMailTest extends InstrumentationTestCase {
         KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
         ksh.initKeyStore();
         LinkedList genCertChainPrivKeyOutput = KeyStoreHandlerTest.generateCertChainPrivPubKey(targetcontext);
-        Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.getFirst();
-        PrivateKey privkey = (PrivateKey) genCertChainPrivKeyOutput.getLast();
+        Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.get(0);
+        PrivateKey privkey = (PrivateKey) genCertChainPrivKeyOutput.get(1);
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("myalias", chain, privkey, privKeyPasswd.toCharArray());
 
