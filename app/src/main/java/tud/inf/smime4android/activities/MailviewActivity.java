@@ -10,9 +10,17 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.mail.smime.SMIMEException;
+
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.KeyStoreException;
+
+import javax.mail.MessagingException;
 
 import tud.inf.smime4android.logic.CryptMail;
 import tud.inf.smime4android.R;
@@ -41,9 +49,15 @@ public class MailviewActivity extends ActionBarActivity {
         recipient.setText("Goofy");
         String ksPath = this.getResources().getString(R.string.ks_filename);
         // TODO read password from stdin ;)
-        String password = "1q2w3e4r";
-        String alias = "keyalias";
+        char [] password = "password".toCharArray();
+        String alias = "alias";
         String privKeyPasswd = "asdf";
+        FileInputStream fs = null;
+        try {
+            fs = getFIS(this,data);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         if(intent.getData()!=null) {
             //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
 
@@ -51,8 +65,24 @@ public class MailviewActivity extends ActionBarActivity {
             try {
                 ciphertext = readTextFromUri(this, intent.getData());
                 CryptMail dm = new CryptMail(this);
-               // content.setText(plaintext);
-                content.setText(dm.decrypt(ksPath, password.toCharArray(), alias, privKeyPasswd.toCharArray(), ciphertext));
+                try {
+                    content.setText(dm.decrypt(null,null,alias,password, fs));
+                } catch (KeyStoreException e) {
+                    content.setText(e.toString());
+                    e.printStackTrace();
+                } catch (MessagingException e) {
+                    content.setText(e.toString());
+                    e.printStackTrace();
+                } catch (CMSException e) {
+                    content.setText(e.toString());
+                    e.printStackTrace();
+                } catch (NoSuchFieldException e) {
+                    content.setText(e.toString());
+                    e.printStackTrace();
+                } catch (SMIMEException e) {
+                    content.setText(e.toString());
+                    e.printStackTrace();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -117,5 +147,9 @@ public class MailviewActivity extends ActionBarActivity {
         plaintext = Base64.encodeToString(decryptedMessage,Base64.DEFAULT);
         return plaintext;
 
+    }
+
+    public static FileInputStream getFIS(Context context, Uri uri) throws FileNotFoundException {
+        return (FileInputStream) context.getContentResolver().openInputStream(uri);
     }
 }

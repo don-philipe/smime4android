@@ -4,6 +4,9 @@ import android.content.Context;
 
 import org.bouncycastle.cms.CMSAlgorithm;
 import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.RecipientId;
+import org.bouncycastle.cms.RecipientInformation;
+import org.bouncycastle.cms.RecipientInformationStore;
 import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
@@ -13,16 +16,24 @@ import org.bouncycastle.mail.smime.SMIMEEnveloped;
 import org.bouncycastle.mail.smime.SMIMEEnvelopedGenerator;
 import org.bouncycastle.mail.smime.SMIMEException;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
+import org.bouncycastle.mail.smime.SMIMEUtil;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.bouncycastle.util.encoders.Base64;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 
@@ -35,6 +46,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.InternetHeaders;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import tud.inf.smime4android.R;
 
@@ -129,88 +141,114 @@ public class CryptMail {
      * @param ksPassword password of the keystore
      * @param alias alias for private key and certificate chain
      * @param privKeyPasswd
-     * @param content a base64 encoded string representing the encrypted mailtext
      * @return the decrypted ciphertext
      */
-    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, String content) {
-        String mailtext = "decrypted mail";
-        String provider = this.context.getResources().getString(R.string.ks_provider);
-        if (Security.getProvider(provider) == null)
-            Security.addProvider(new BouncyCastleProvider());
-        SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
+    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, FileInputStream fs) throws KeyStoreException, IOException, MessagingException, CMSException, NoSuchFieldException, SMIMEException {
+        KeyStoreHandler ksh = new KeyStoreHandler(context);
+        ksh.getKeyStoreSize();
 
+        Certificate[] certarray = ksh.getCertChain("alias");
+        X509Certificate cert = (X509Certificate)certarray[certarray.length-1];
+        RecipientId recId = new JceKeyTransRecipientId(cert);
+
+        //
+        // Get a Session object with the default properties.
+        //
         Properties props = System.getProperties();
-        Session session = Session.getDefaultInstance(props);
 
-    /*    SMIMEEnveloped m = null;
-        MimeMessage msg = null;
-        try {
-            msg = new MimeMessage(session, is);
-         //   m = new SMIMEEnveloped(msg);
-        } catch (MessagingException e1) {
-            e1.printStackTrace();
-      //  } catch (CMSException e1) {
-       //     e1.printStackTrace();
-        }*/
+        Session session = Session.getDefaultInstance(props, null);
 
+        MimeMessage msg = new MimeMessage(session, fs);
+
+        SMIMEEnveloped       m = new SMIMEEnveloped(msg);
+
+        RecipientInformationStore recipients = m.getRecipientInfos();
+        RecipientInformation recipient = recipients.get(recId);
+
+        MimeBodyPart        res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey("alias", privKeyPasswd)).setProvider("BC")));
+
+        System.out.println("Message Contents");
+        System.out.println("----------------");
+        System.out.println(res.getContent());
+        return res.getContent().toString();
+//        String mailtext = "decrypted mail";
+//        String provider = this.context.getResources().getString(R.string.ks_provider);
+//        if (Security.getProvider(provider) == null)
+//            Security.addProvider(new BouncyCastleProvider());
+//        SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
+//
+//        Properties props = System.getProperties();
+//        Session session = Session.getDefaultInstance(props);
+//
+//       SMIMEEnveloped m = null;
+//        MimeMessage msg = null;
+//        try {
+//            msg = new MimeMessage(session, fs);
+//         //   m = new SMIMEEnveloped(msg);
+//        } catch (MessagingException e1) {
+//            e1.printStackTrace();
+//      //  } catch (CMSException e1) {
+//       //     e1.printStackTrace();
+//        }
+//
 //        MimeBodyPart res = new MimeBodyPart();
 //        MimeMultipart mm = (MimeMultipart) m.getEncryptedContent();
-/*
-        MimeMessage body = new MimeMessage(session);
-        try {
-            body.setFrom(msg.getFrom().toString());
-            // assume there is only one recipient
-            body.setRecipient(Message.RecipientType.TO, msg.getAllRecipients()[0]);
-            body.setSubject(msg.getSubject());
-            body.setContent(msg, msg.getContentType());
-            body.saveChanges();
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }*/
-
-        Certificate[] reciCert = null;
-        PrivateKey privKey = null;
-        try {
-            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
-//            List<X509Certificate> x509 = ksh.getAllCertificates();
-            reciCert = ksh.getCertChain(alias);
-            privKey = ksh.getPrivKey(alias, privKeyPasswd);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-
-        MimeBodyPart body = null;
-        try {
-            // set empty header to avoid NullPointerException in toolkit.decrypt
-            InternetHeaders ih = new InternetHeaders();
-            ih.addHeaderLine("");
-            body = new MimeBodyPart(ih, Base64.decode(content));
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
-       if(reciCert != null && privKey != null) {
-           MimeBodyPart dec = new MimeBodyPart();
-           try {
-               JceKeyTransRecipientId jktci = new JceKeyTransRecipientId((X509Certificate)reciCert[0]);
-               JceKeyTransEnvelopedRecipient jkter = new JceKeyTransEnvelopedRecipient(privKey);
-               jkter.setProvider(provider);
-               dec = toolkit.decrypt(body, jktci , jkter);
-               if(dec == null)
-                   mailtext = "recipient ID cannot be matched";
-               else
-                   mailtext = dec.getContent().toString();
-           } catch (SMIMEException e) {
-               e.printStackTrace();
-           } catch (MessagingException e) {
-               e.printStackTrace();
-           } catch (IOException e) {
-               e.printStackTrace();
-           }
-       } else {
-           mailtext = "missing recipient certificate and private key";
-       }
-       return mailtext;
+//
+//        MimeMessage body = new MimeMessage(session);
+//        try {
+////            body.setFrom(msg.getFrom());
+//            // assume there is only one recipient
+//            body.setRecipient(Message.RecipientType.TO, msg.getAllRecipients()[0]);
+//            body.setSubject(msg.getSubject());
+//            body.setContent(msg, msg.getContentType());
+//            body.saveChanges();
+//        } catch (MessagingException e) {
+//            e.printStackTrace();
+//        }
+//
+//        Certificate[] reciCert = null;
+//        PrivateKey privKey = null;
+//        try {
+//            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
+////            List<X509Certificate> x509 = ksh.getAllCertificates();
+//            reciCert = ksh.getCertChain(alias);
+//            privKey = ksh.getPrivKey(alias, privKeyPasswd);
+//        } catch (NoSuchFieldException e) {
+//            e.printStackTrace();
+//        } catch (KeyStoreException e) {
+//            e.printStackTrace();
+//        }
+//
+////        MimeBodyPart body = null;
+//        try {
+//            // set empty header to avoid NullPointerException in toolkit.decrypt
+//            InternetHeaders ih = new InternetHeaders();
+//            ih.addHeaderLine("");
+//            body = new MimeBodyPart(ih, Base64.decode(content));
+//        } catch (MessagingException e) {
+//            e.printStackTrace();
+//        }
+//       if(reciCert != null && privKey != null) {
+//           MimeBodyPart dec = new MimeBodyPart();
+//           try {
+//               JceKeyTransRecipientId jktci = new JceKeyTransRecipientId((X509Certificate)reciCert[0]);
+//               JceKeyTransEnvelopedRecipient jkter = new JceKeyTransEnvelopedRecipient(privKey);
+//               jkter.setProvider(provider);
+//               dec = toolkit.decrypt(body, jktci , jkter);
+//               if(dec == null)
+//                   mailtext = "recipient ID cannot be matched";
+//               else
+//                   mailtext = dec.getContent().toString();
+//           } catch (SMIMEException e) {
+//               e.printStackTrace();
+//           } catch (MessagingException e) {
+//               e.printStackTrace();
+//           } catch (IOException e) {
+//               e.printStackTrace();
+//           }
+//       } else {
+//           mailtext = "missing recipient certificate and private key";
+//       }
+//       return mailtext;
     }
 }

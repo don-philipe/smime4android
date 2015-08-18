@@ -36,14 +36,13 @@ public class KeyStoreHandler {
 
     public KeyStoreHandler(Context context) {
         this.context = context;
-        ks = null;
+        initKeyStore();
     }
 
     /**
      *
      */
     public void initKeyStore() {
-        ks = null;
         try {
             ks = KeyStore.getInstance(ANDROID_KEYSTORE);
         } catch (KeyStoreException e) {
@@ -317,12 +316,6 @@ public class KeyStoreHandler {
      * @throws KeyStoreException
      */
     public int getKeyStoreSize() throws KeyStoreException {
-        KeyStore ks = null;
-        try {
-            ks = this.loadKeyStore();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
         return ks.size();
     }
 
@@ -350,12 +343,6 @@ public class KeyStoreHandler {
      * @throws KeyStoreException
      */
     public Certificate getSingleCert(String alias) throws KeyStoreException {
-        KeyStore ks = null;
-        try {
-            ks = this.loadKeyStore();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
         return ks.getCertificate(alias);
     }
 
@@ -367,12 +354,6 @@ public class KeyStoreHandler {
      * @throws KeyStoreException if keystore is not initialized
      */
     public Certificate[] getCertChain(String alias) throws KeyStoreException {
-        KeyStore ks = null;
-        try {
-            ks = this.loadKeyStore();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
         return ks.getCertificateChain(alias);
     }
 
