@@ -23,6 +23,7 @@ import org.bouncycastle.util.encoders.Base64;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -143,7 +144,7 @@ public class CryptMail {
      * @param privKeyPasswd
      * @return the decrypted ciphertext
      */
-    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, FileInputStream fs) throws KeyStoreException, IOException, MessagingException, CMSException, NoSuchFieldException, SMIMEException {
+    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, InputStream inputStream) throws KeyStoreException, IOException, MessagingException, CMSException, NoSuchFieldException, SMIMEException {
         KeyStoreHandler ksh = new KeyStoreHandler(context);
         ksh.getKeyStoreSize();
 
@@ -158,14 +159,14 @@ public class CryptMail {
 
         Session session = Session.getDefaultInstance(props, null);
 
-        MimeMessage msg = new MimeMessage(session, fs);
-
-        SMIMEEnveloped       m = new SMIMEEnveloped(msg);
+        MimeMessage msg = new MimeMessage(session, inputStream);
+        //TODO NullPointer, obwohl msg nicht null war - prüfen!!!!!!!
+        SMIMEEnveloped m = new SMIMEEnveloped(msg);
 
         RecipientInformationStore recipients = m.getRecipientInfos();
         RecipientInformation recipient = recipients.get(recId);
 
-        MimeBodyPart        res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey("alias", privKeyPasswd)).setProvider("BC")));
+        MimeBodyPart res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey("alias", privKeyPasswd)).setProvider("BC")));
 
         System.out.println("Message Contents");
         System.out.println("----------------");
@@ -183,7 +184,7 @@ public class CryptMail {
 //       SMIMEEnveloped m = null;
 //        MimeMessage msg = null;
 //        try {
-//            msg = new MimeMessage(session, fs);
+//            msg = new MimeMessage(session, inputStream);
 //         //   m = new SMIMEEnveloped(msg);
 //        } catch (MessagingException e1) {
 //            e1.printStackTrace();

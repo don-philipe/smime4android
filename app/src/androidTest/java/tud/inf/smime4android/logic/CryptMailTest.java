@@ -3,7 +3,14 @@ package tud.inf.smime4android.logic;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.mail.smime.SMIMEException;
+
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
@@ -49,7 +56,23 @@ public class CryptMailTest extends InstrumentationTestCase {
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("myalias", chain, privkey, privKeyPasswd.toCharArray());
 
-        String plaintext = dm.decrypt(this.ksFileName, this.ksPasswd, "myalias", privKeyPasswd.toCharArray(), ciphertext);
+        InputStream is = new ByteArrayInputStream(ciphertext.getBytes());
+        String plaintext = null;
+        try {
+            plaintext = dm.decrypt(this.ksFileName, this.ksPasswd, "myalias", privKeyPasswd.toCharArray(), is);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        } catch (CMSException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (SMIMEException e) {
+            e.printStackTrace();
+        }
         assertEquals("hello world!", plaintext);
 
         targetcontext.deleteFile(this.ksFileName);
@@ -80,7 +103,23 @@ public class CryptMailTest extends InstrumentationTestCase {
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("myalias", chain, privkey, privKeyPasswd.toCharArray());
 
-        String plaintext = cm.decrypt(this.ksFileName, this.ksPasswd, "myalias", privKeyPasswd.toCharArray(), ciphertext);
+        InputStream is = new ByteArrayInputStream(ciphertext.getBytes());
+        String plaintext = null;
+        try {
+            plaintext = cm.decrypt(this.ksFileName, this.ksPasswd, "myalias", privKeyPasswd.toCharArray(), is);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        } catch (CMSException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (SMIMEException e) {
+            e.printStackTrace();
+        }
         assertEquals("hello world!", plaintext);
 
         targetcontext.deleteFile(this.ksFileName);

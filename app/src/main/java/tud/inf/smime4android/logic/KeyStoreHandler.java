@@ -121,12 +121,9 @@ public class KeyStoreHandler {
      */
     public void addCertificate(String alias, Certificate cert) {
         try {
-            KeyStore ks = this.loadKeyStore();
-            ks.setCertificateEntry(alias, cert);
-            this.storeKeyStore(ks);
+            this.ks.setCertificateEntry(alias, cert);
+            this.storeKeyStore(this.ks);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
             e.printStackTrace();
@@ -145,12 +142,9 @@ public class KeyStoreHandler {
      */
     public void addPubKey(String alias, PublicKey pubKey, Certificate[] certs) {
         try {
-            KeyStore ks = this.loadKeyStore();
-            ks.setKeyEntry(alias, pubKey, null, certs);
-            this.storeKeyStore(ks);
+            this.ks.setKeyEntry(alias, pubKey, null, certs);
+            this.storeKeyStore(this.ks);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
             e.printStackTrace();
@@ -199,9 +193,8 @@ public class KeyStoreHandler {
      */
     public PrivateKey getPrivKey(String alias, char[] passwd) throws NoSuchFieldException{
         try {
-            KeyStore ks = this.loadKeyStore();
-            if(ks != null) {
-                return (PrivateKey) ks.getKey(alias, passwd);
+            if(this.ks != null) {
+                return (PrivateKey) this.ks.getKey(alias, passwd);
             }
             else
                 throw new NoSuchFieldException("can't get keystore");
@@ -250,14 +243,11 @@ public class KeyStoreHandler {
     public boolean removePrivKey(String alias) {
         boolean success = false;
         try {
-            KeyStore ks = this.loadKeyStore();
-            if(ks.isKeyEntry(alias)) {
-                ks.deleteEntry(alias);
-                this.storeKeyStore(ks);
+            if(this.ks.isKeyEntry(alias)) {
+                this.ks.deleteEntry(alias);
+                this.storeKeyStore(this.ks);
                 success = true;
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -326,9 +316,8 @@ public class KeyStoreHandler {
      * @throws KeyStoreException if keystore is not initialized
      */
     public boolean containsAlias(String alias) throws KeyStoreException {
-        KeyStore ks = null;
         try {
-            ks = this.loadKeyStore();
+            this.ks = this.loadKeyStore();
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
