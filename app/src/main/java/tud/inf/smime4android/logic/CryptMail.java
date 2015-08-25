@@ -36,6 +36,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import javax.mail.Address;
@@ -148,17 +149,14 @@ public class CryptMail {
         KeyStoreHandler ksh = new KeyStoreHandler(context);
         ksh.getKeyStoreSize();
 
-        Certificate[] certarray = ksh.getCertChain("alias");
+        Security.addProvider(new BouncyCastleProvider());
+        Certificate[] certarray = ksh.getCertChain(alias);
         X509Certificate cert = (X509Certificate)certarray[certarray.length-1];
         RecipientId recId = new JceKeyTransRecipientId(cert);
 
-        //
         // Get a Session object with the default properties.
-        //
         Properties props = System.getProperties();
-
         Session session = Session.getDefaultInstance(props, null);
-
         MimeMessage msg = new MimeMessage(session, inputStream);
         //TODO NullPointer, obwohl msg nicht null war - prüfen!!!!!!!
         SMIMEEnveloped m = new SMIMEEnveloped(msg);
@@ -166,11 +164,11 @@ public class CryptMail {
         RecipientInformationStore recipients = m.getRecipientInfos();
         RecipientInformation recipient = recipients.get(recId);
 
-        MimeBodyPart res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey("alias", privKeyPasswd)).setProvider("BC")));
+        MimeBodyPart res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey(alias, privKeyPasswd)).setProvider("BC")));
 
-        System.out.println("Message Contents");
-        System.out.println("----------------");
-        System.out.println(res.getContent());
+//        System.out.println("Message Contents");
+//        System.out.println("----------------");
+//        System.out.println(res.getContent());
         return res.getContent().toString();
 //        String mailtext = "decrypted mail";
 //        String provider = this.context.getResources().getString(R.string.ks_provider);
