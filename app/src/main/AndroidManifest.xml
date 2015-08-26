@@ -114,6 +114,17 @@
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.crt" />
+                <!-- Zertifikat -->
+                <data android:pathPattern=".*\\.p12" />
+                <data android:pathPattern=".*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
             </intent-filter>
         </activity>
         <activity

@@ -5,6 +5,7 @@ import android.content.Context;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyStore;
@@ -359,7 +360,7 @@ public class KeyStoreHandler {
      * @throws UnrecoverableKeyException in case the private key cannot be recovered, usually this
      * is the case when the wrong password is passed.
      */
-    public void importPkcs12File(ByteArrayInputStream byteArrayInputStream, char[] ksPasswd, char[] privKeyPasswd)
+    public void importPkcs12File(FileInputStream byteArrayInputStream, char[] ksPasswd, char[] privKeyPasswd)
             throws IOException, CertificateException, UnrecoverableKeyException {
         String provider = this.context.getResources().getString(R.string.ks_provider);
         if (Security.getProvider(provider) == null)
@@ -371,9 +372,17 @@ public class KeyStoreHandler {
             while(e.hasMoreElements()) {
                 String alias = e.nextElement();
                 Certificate[] certchain = pkcs12.getCertificateChain(alias);
-                PrivateKey pk = (PrivateKey) pkcs12.getKey(alias, privKeyPasswd);
-                if(pk != null)
-                    this.ks.setKeyEntry(alias, pk, privKeyPasswd, certchain);
+                //PrivateKey pk = (PrivateKey) pkcs12.getKey(alias, privKeyPasswd);
+                PrivateKey pk = (PrivateKey) pkcs12.getKey(alias, null);
+                if(pk != null) {
+                    try {
+                        this.ks.setKeyEntry(alias, pk, privKeyPasswd, certchain);
+                    } catch (KeyStoreException ex){
+                        this.initKeyStore();
+                        this.ks.setKeyEntry(alias, pk, privKeyPasswd, certchain);
+                        //this.ks.setKeyEntry(alias,pk.getEncoded(),certchain);//encoding not supported -.-
+                    }
+                }
                 else if(certchain != null)   // its just an intermediate or root certificate we got
                     this.ks.setCertificateEntry(alias, certchain[0]);
             }

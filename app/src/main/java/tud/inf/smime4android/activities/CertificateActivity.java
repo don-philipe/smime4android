@@ -54,6 +54,7 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -106,10 +107,20 @@ public class CertificateActivity extends ActionBarActivity {
             LayoutInflater inflater = getLayoutInflater();
             View dialogView = inflater.inflate(R.layout.dialog_addkeystore, null);
             alias = (EditText) dialogView.findViewById(R.id.keystore_password);
+            final Context context = this;
             builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     String password = alias.getText().toString();
-                    addCertificateToKS(intent.getData(), password);
+                    //addCertificateToKS(intent.getData(), password);
+                    try {
+                        ksh.importPkcs12File(getFIS(context, intent.getData()),password.toCharArray(),null); //TODO privKeyPassword???
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (CertificateException e) {
+                        e.printStackTrace();
+                    } catch (UnrecoverableKeyException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
             builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
