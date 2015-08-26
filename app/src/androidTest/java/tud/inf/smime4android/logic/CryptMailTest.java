@@ -5,12 +5,15 @@ import android.test.InstrumentationTestCase;
 
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.mail.smime.SMIMEException;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.util.encoders.Base64;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -19,6 +22,8 @@ import java.util.LinkedList;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+
+import tud.inf.smime4android.R;
 
 /**
  * Created by don on 28.07.15.
@@ -46,7 +51,13 @@ public class CryptMailTest extends InstrumentationTestCase {
         ksh.initKeyStore();
         LinkedList genCertChainPrivKeyOutput = KeyStoreHandlerTest.generateCertChainPrivPubKey(targetcontext);
         Certificate[] chain = (Certificate[]) genCertChainPrivKeyOutput.get(0);
-        PrivateKey privkey = (PrivateKey) genCertChainPrivKeyOutput.get(1);
+        PrivateKey privkey = null;//(PrivateKey) genCertChainPrivKeyOutput.get(1);
+        try {
+            privkey = new JcaPEMKeyConverter().setProvider("BC").getKeyPair((PEMKeyPair) (
+                    new PEMParser(new InputStreamReader(targetcontext.getResources().openRawResource(R.raw.key_pem)))).readObject()).getPrivate();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         String privKeyPasswd = "4r3e2w1q";
         ksh.addPrivKeyAndCertificate("myalias", chain, privkey, privKeyPasswd.toCharArray());
 
