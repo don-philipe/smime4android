@@ -7,6 +7,9 @@ import org.bouncycastle.util.encoders.Base64;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyFactory;
@@ -383,8 +386,19 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
         int numentries = 0;
         boolean containsalias = false;
+        FileInputStream fileInputStream = null;
         try {
-            ksh.importPkcs12File(new ByteArrayInputStream(pkcs12nopass), "".toCharArray(), privkeypasswd);
+            fileInputStream = new FileInputStream("");
+            fileInputStream.read(pkcs12nopass);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        /*ByteArrayInputStream bais = new ByteArrayInputStream(pkcs12nopass);
+        FileInputStream fis = this.getFis(bais);*/
+        try {
+            ksh.importPkcs12File(fileInputStream, "".toCharArray(), privkeypasswd);
             numentries = ksh.getKeyStoreSize();
             containsalias = ksh.containsAlias("Certyfikat uzytkownika");
         } catch (IOException e) {
@@ -406,7 +420,15 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         numentries = 0;
         containsalias = false;
         try {
-            ksh1.importPkcs12File(new ByteArrayInputStream(pkcs12), pkcs12passwd, privkeypasswd);
+            fileInputStream = new FileInputStream("");
+            fileInputStream.read(pkcs12);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            ksh1.importPkcs12File(fileInputStream, pkcs12passwd, privkeypasswd);
             numentries = ksh1.getKeyStoreSize();
             containsalias = ksh1.containsAlias("VeriSign Class 1 CA Individual Subscriber-Persona Not Validated - VeriSign, Inc.");
         } catch (IOException e) {

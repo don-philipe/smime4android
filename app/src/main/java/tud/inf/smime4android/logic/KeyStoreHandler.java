@@ -351,7 +351,7 @@ public class KeyStoreHandler {
      * Load a pkcs12 file, usually ending with ".p12".
      * Private keys which have already a password will be protected with the same password in local
      * keystore.
-     * @param byteArrayInputStream input stream to pkcs12 file.
+     * @param fileInputStream input stream to pkcs12 file.
      * @param ksPasswd password to pkcs12 file.
      * @param privKeyPasswd password to recover the private key.
      * @throws IOException if a problem occurred while reading from the stream.
@@ -360,14 +360,14 @@ public class KeyStoreHandler {
      * @throws UnrecoverableKeyException in case the private key cannot be recovered, usually this
      * is the case when the wrong password is passed.
      */
-    public void importPkcs12File(FileInputStream byteArrayInputStream, char[] ksPasswd, char[] privKeyPasswd)
+    public void importPkcs12File(FileInputStream fileInputStream, char[] ksPasswd, char[] privKeyPasswd)
             throws IOException, CertificateException, UnrecoverableKeyException {
         String provider = this.context.getResources().getString(R.string.ks_provider);
         if (Security.getProvider(provider) == null)
             Security.addProvider(new BouncyCastleProvider());
         try {
             KeyStore pkcs12 = KeyStore.getInstance("PKCS12", provider);
-            pkcs12.load(byteArrayInputStream, ksPasswd);
+            pkcs12.load(fileInputStream, ksPasswd);
             Enumeration<String> e = pkcs12.aliases();
             while(e.hasMoreElements()) {
                 String alias = e.nextElement();
