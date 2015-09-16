@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.security.Key;
+
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -54,9 +54,10 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
+
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 
 import tud.inf.smime4android.R;
@@ -187,13 +188,26 @@ public class CertificateActivity extends ActionBarActivity {
         List<X509Certificate> certificates = new ArrayList<X509Certificate>();
         list.clear();
         try {
-            certificates = ksh.getAllCertificates();
-        } catch (NoSuchFieldException e) {
+            KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+            ks.load(null);
+            Enumeration<String> aliases = ks.aliases();
+            while(aliases.hasMoreElements())
+                list.add(aliases.nextElement());
+            //certificates = ksh.getAllCertificates();
+        //} catch (NoSuchFieldException e) {
+        //    e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        for (int i = 0; i<certificates.size(); i++){
-            list.add( findCName(certificates.get(i).getSubjectDN().getName().toString()));
-        }
+        //for (int i = 0; i<certificates.size(); i++){
+            //list.add( findCName(certificates.get(i).getSubjectDN().getName().toString()));
+        //}
         adapter.notifyDataSetChanged();
     }
 

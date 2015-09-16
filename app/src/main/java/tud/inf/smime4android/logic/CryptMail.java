@@ -43,6 +43,7 @@ import java.util.Properties;
 import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
@@ -261,9 +262,10 @@ public class CryptMail {
      * @throws CMSException
      */
     public MimeMessage decrypt1(char[] privKeyPasswd, InputStream inputStream) throws MessagingException, CMSException {
-        Properties props = System.getProperties();
-        Session session = Session.getDefaultInstance(props, null);
-        MimeMessage encrypted = new MimeMessage(session, inputStream);
+        //Properties props = System.getProperties();
+        //Session session = Session.getDefaultInstance(props, null);
+        // wohl auch mit MimeMessage möglich
+        MimeBodyPart encrypted = new MimeBodyPart(inputStream);
         SMIMEEnveloped message = new SMIMEEnveloped(encrypted);
 
         RecipientInformationStore recinfos = message.getRecipientInfos();
