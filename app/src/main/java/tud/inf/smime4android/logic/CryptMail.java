@@ -20,6 +20,7 @@ import org.bouncycastle.mail.smime.SMIMEUtil;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.bouncycastle.util.encoders.Base64;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -249,5 +250,56 @@ public class CryptMail {
 //           mailtext = "missing recipient certificate and private key";
 //       }
 //       return mailtext;
+    }
+
+    /**
+     *
+     * @param privKeyPasswd
+     * @param inputStream
+     * @return
+     * @throws MessagingException
+     * @throws CMSException
+     */
+    public MimeMessage decrypt1(char[] privKeyPasswd, InputStream inputStream) throws MessagingException, CMSException {
+        Properties props = System.getProperties();
+        Session session = Session.getDefaultInstance(props, null);
+        MimeMessage encrypted = new MimeMessage(session, inputStream);
+        SMIMEEnveloped message = new SMIMEEnveloped(encrypted);
+
+        RecipientInformationStore recinfos = message.getRecipientInfos();
+        KeyStoreHandler ksh = new KeyStoreHandler(context);
+        //Enumeration aliases = this.keystore.aliases();
+        List<String> aliases = null;
+        RecipientInformation recid = null;
+        String alias = null;
+        try {
+            aliases = ksh.getAllAliases();
+            for(String s : aliases) {
+            //while ((recid == null) && aliases.hasMoreElements()) {
+                //alias = aliases.nextElement();
+                alias = s;
+                if (ksh.containsAlias(alias))
+                    recid = recinfos.get(new JceKeyTransRecipientId((X509Certificate) ksh.getSingleCert((alias))));
+                if(recid != null)
+                    break;
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        if (recid == null)
+            throw new RuntimeException("No decryption key found");
+
+        JceKeyTransEnvelopedRecipient recipient = null;
+        try {
+            recipient = new JceKeyTransEnvelopedRecipient(ksh.getPrivKey(alias, privKeyPasswd));
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+
+        byte[] content = recid.getContent(recipient);
+
+        MimeMessage decrypted = new MimeMessage(Session.getDefaultInstance(System.getProperties()), new ByteArrayInputStream(content));
+        decrypted.saveChanges();
+        return decrypted;
     }
 }
