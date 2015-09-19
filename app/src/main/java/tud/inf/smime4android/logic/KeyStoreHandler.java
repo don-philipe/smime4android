@@ -60,7 +60,6 @@ public class KeyStoreHandler {
         }
     }
 
-
     public int keyStoreSize() {
         int result = 0;
         try {

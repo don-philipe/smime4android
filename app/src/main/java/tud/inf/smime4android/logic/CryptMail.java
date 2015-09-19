@@ -17,6 +17,9 @@ import org.bouncycastle.mail.smime.SMIMEEnvelopedGenerator;
 import org.bouncycastle.mail.smime.SMIMEException;
 import org.bouncycastle.mail.smime.SMIMEToolkit;
 import org.bouncycastle.mail.smime.SMIMEUtil;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.bouncycastle.util.encoders.Base64;
 
@@ -25,14 +28,17 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -72,236 +78,273 @@ public class CryptMail {
 
     /**
      *
-     * @param ksFile
-     * @param ksPassword
-     * @param keyAlias
-     * @param msgContent
-     * @return
+     * @param p7m the p7m file
+     * @param certstream certificate of private key (pem file)
+     * @param keystream private key (pem file)
+     * @return the plaintext
+     * @throws MessagingException in case of issues with the inputstream
+     * @throws CMSException in case of malformed input
      */
-    public MimeMessage encrypt(String ksFile, char[] ksPassword, String keyAlias, String msgContent) {
-        KeyStoreHandler ksh = new KeyStoreHandler(this.context);
-        String provider = this.context.getResources().getString(R.string.ks_provider);
-        if (Security.getProvider(provider) == null)
-            Security.addProvider(new BouncyCastleProvider());
-
-        // create the generator for creating an smime/encrypted message
-        SMIMEEnvelopedGenerator gen = new SMIMEEnvelopedGenerator();
-
+    public byte[] decrypt(InputStream p7m, InputStream certstream, InputStream keystream) throws MessagingException, CMSException {
+        Session session = Session.getDefaultInstance(System.getProperties(), null);
+        MimeMessage message = new MimeMessage(session, p7m);
+        SMIMEEnveloped env = new SMIMEEnveloped(message);
+        RecipientInformationStore store = env.getRecipientInfos();
+        X509Certificate cert = null;
         try {
-            Certificate[] chain = ksh.getCertChain(keyAlias);
-            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator((X509Certificate) chain[0]).setProvider(provider));
-        } catch (CertificateEncodingException e) {
+            cert = (X509Certificate) CertificateFactory.getInstance("X.509", BouncyCastleProvider.PROVIDER_NAME)
+                    .generateCertificate(certstream);
+        } catch (CertificateException e) {
             e.printStackTrace();
-        } catch (KeyStoreException e) {
+            System.err.println("X.509 certificates not supported");
+        } catch (NoSuchProviderException e) {
             e.printStackTrace();
+            System.err.println("provider " + BouncyCastleProvider.PROVIDER_NAME + " not available");
         }
-
-        // create a subject key id - this has to be done the same way as
-        // it is done in the certificate associated with the private key
-        // version 3 only.
-        /*
-        MessageDigest dig = MessageDigest.getInstance("SHA1", provider);
-        dig.update(cert.getPublicKey().getEncoded());
-        gen.addKeyTransRecipient(cert.getPublicKey(), dig.digest());
-        */
-
-        // Get a Session object and create the mail message
-        Properties props = System.getProperties();
-        Session session = Session.getDefaultInstance(props, null);
-        // create the base for our message
-        MimeMessage msg = new MimeMessage(session);
-        MimeMessage body = new MimeMessage(session);
-
+        RecipientInformation recipInfo = store.get(new JceKeyTransRecipientId(cert));
+        PrivateKey key = null;
         try {
-            msg.setText(msgContent);
-            msg.saveChanges();
-
-            MimeBodyPart mp = gen.generate(msg, new JceCMSContentEncryptorBuilder(CMSAlgorithm.RC2_CBC).setProvider(provider).build());
-
-            Address fromUser = new InternetAddress("\"Eric H. Echidna\"<eric@bouncycastle.org>");
-            Address toUser = new InternetAddress("example@bouncycastle.org");
-
-            body.setFrom(fromUser);
-            body.setRecipient(Message.RecipientType.TO, toUser);
-            body.setSubject("example encrypted message");
-            body.setContent(mp.getContent(), mp.getContentType());
-            body.saveChanges();
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        } catch (SMIMEException e) {
-            e.printStackTrace();
-        } catch (CMSException e) {
-            e.printStackTrace();
+            key = new JcaPEMKeyConverter().setProvider("BC")
+                    .getKeyPair((PEMKeyPair) (new PEMParser(new InputStreamReader(keystream))).readObject()).getPrivate();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return body;
+        byte[] content = recipInfo.getContent(new JceKeyTransEnvelopedRecipient(key));
+        return content;
     }
 
-    /**
-     *
-     * @param ksFile keystore filename
-     * @param ksPassword password of the keystore
-     * @param alias alias for private key and certificate chain
-     * @param privKeyPasswd
-     * @return the decrypted ciphertext
-     */
-    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, InputStream inputStream) throws KeyStoreException, IOException, MessagingException, CMSException, NoSuchFieldException, SMIMEException {
-        KeyStoreHandler ksh = new KeyStoreHandler(context);
-        ksh.getKeyStoreSize();
-
-        Security.addProvider(new BouncyCastleProvider());
-        Certificate[] certarray = ksh.getCertChain(alias);
-        X509Certificate cert = (X509Certificate)certarray[certarray.length-1];
-        RecipientId recId = new JceKeyTransRecipientId(cert);
-
-        // Get a Session object with the default properties.
-        Properties props = System.getProperties();
-        Session session = Session.getDefaultInstance(props, null);
-        MimeMessage msg = new MimeMessage(session, inputStream);
-        //TODO NullPointer, obwohl msg nicht null war - prüfen!!!!!!!
-        SMIMEEnveloped m = new SMIMEEnveloped(msg);
-
-        RecipientInformationStore recipients = m.getRecipientInfos();
-        RecipientInformation recipient = recipients.get(recId);
-
-        MimeBodyPart res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey(alias, privKeyPasswd)).setProvider("BC")));
-
-//        System.out.println("Message Contents");
-//        System.out.println("----------------");
-//        System.out.println(res.getContent());
-        return res.getContent().toString();
-//        String mailtext = "decrypted mail";
+//    /**
+//     *
+//     * @param ksFile
+//     * @param ksPassword
+//     * @param keyAlias
+//     * @param msgContent
+//     * @return
+//     */
+//    public MimeMessage encrypt(String ksFile, char[] ksPassword, String keyAlias, String msgContent) {
+//        KeyStoreHandler ksh = new KeyStoreHandler(this.context);
 //        String provider = this.context.getResources().getString(R.string.ks_provider);
 //        if (Security.getProvider(provider) == null)
 //            Security.addProvider(new BouncyCastleProvider());
-//        SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
 //
-//        Properties props = System.getProperties();
-//        Session session = Session.getDefaultInstance(props);
+//        // create the generator for creating an smime/encrypted message
+//        SMIMEEnvelopedGenerator gen = new SMIMEEnvelopedGenerator();
 //
-//       SMIMEEnveloped m = null;
-//        MimeMessage msg = null;
 //        try {
-//            msg = new MimeMessage(session, inputStream);
-//         //   m = new SMIMEEnveloped(msg);
-//        } catch (MessagingException e1) {
-//            e1.printStackTrace();
-//      //  } catch (CMSException e1) {
-//       //     e1.printStackTrace();
-//        }
-//
-//        MimeBodyPart res = new MimeBodyPart();
-//        MimeMultipart mm = (MimeMultipart) m.getEncryptedContent();
-//
-//        MimeMessage body = new MimeMessage(session);
-//        try {
-////            body.setFrom(msg.getFrom());
-//            // assume there is only one recipient
-//            body.setRecipient(Message.RecipientType.TO, msg.getAllRecipients()[0]);
-//            body.setSubject(msg.getSubject());
-//            body.setContent(msg, msg.getContentType());
-//            body.saveChanges();
-//        } catch (MessagingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        Certificate[] reciCert = null;
-//        PrivateKey privKey = null;
-//        try {
-//            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
-////            List<X509Certificate> x509 = ksh.getAllCertificates();
-//            reciCert = ksh.getCertChain(alias);
-//            privKey = ksh.getPrivKey(alias, privKeyPasswd);
-//        } catch (NoSuchFieldException e) {
+//            Certificate[] chain = ksh.getCertChain(keyAlias);
+//            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator((X509Certificate) chain[0]).setProvider(provider));
+//        } catch (CertificateEncodingException e) {
 //            e.printStackTrace();
 //        } catch (KeyStoreException e) {
 //            e.printStackTrace();
 //        }
 //
-////        MimeBodyPart body = null;
+//        // create a subject key id - this has to be done the same way as
+//        // it is done in the certificate associated with the private key
+//        // version 3 only.
+//        /*
+//        MessageDigest dig = MessageDigest.getInstance("SHA1", provider);
+//        dig.update(cert.getPublicKey().getEncoded());
+//        gen.addKeyTransRecipient(cert.getPublicKey(), dig.digest());
+//        */
+//
+//        // Get a Session object and create the mail message
+//        Properties props = System.getProperties();
+//        Session session = Session.getDefaultInstance(props, null);
+//        // create the base for our message
+//        MimeMessage msg = new MimeMessage(session);
+//        MimeMessage body = new MimeMessage(session);
+//
 //        try {
-//            // set empty header to avoid NullPointerException in toolkit.decrypt
-//            InternetHeaders ih = new InternetHeaders();
-//            ih.addHeaderLine("");
-//            body = new MimeBodyPart(ih, Base64.decode(content));
+//            msg.setText(msgContent);
+//            msg.saveChanges();
+//
+//            MimeBodyPart mp = gen.generate(msg, new JceCMSContentEncryptorBuilder(CMSAlgorithm.RC2_CBC).setProvider(provider).build());
+//
+//            Address fromUser = new InternetAddress("\"Eric H. Echidna\"<eric@bouncycastle.org>");
+//            Address toUser = new InternetAddress("example@bouncycastle.org");
+//
+//            body.setFrom(fromUser);
+//            body.setRecipient(Message.RecipientType.TO, toUser);
+//            body.setSubject("example encrypted message");
+//            body.setContent(mp.getContent(), mp.getContentType());
+//            body.saveChanges();
 //        } catch (MessagingException e) {
 //            e.printStackTrace();
+//        } catch (SMIMEException e) {
+//            e.printStackTrace();
+//        } catch (CMSException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
 //        }
-//       if(reciCert != null && privKey != null) {
-//           MimeBodyPart dec = new MimeBodyPart();
-//           try {
-//               JceKeyTransRecipientId jktci = new JceKeyTransRecipientId((X509Certificate)reciCert[0]);
-//               JceKeyTransEnvelopedRecipient jkter = new JceKeyTransEnvelopedRecipient(privKey);
-//               jkter.setProvider(provider);
-//               dec = toolkit.decrypt(body, jktci , jkter);
-//               if(dec == null)
-//                   mailtext = "recipient ID cannot be matched";
-//               else
-//                   mailtext = dec.getContent().toString();
-//           } catch (SMIMEException e) {
-//               e.printStackTrace();
-//           } catch (MessagingException e) {
-//               e.printStackTrace();
-//           } catch (IOException e) {
-//               e.printStackTrace();
-//           }
-//       } else {
-//           mailtext = "missing recipient certificate and private key";
-//       }
-//       return mailtext;
-    }
-
-    /**
-     *
-     * @param privKeyPasswd
-     * @param inputStream
-     * @return
-     * @throws MessagingException
-     * @throws CMSException
-     */
-    public MimeMessage decrypt1(char[] privKeyPasswd, InputStream inputStream) throws MessagingException, CMSException {
-        //Properties props = System.getProperties();
-        //Session session = Session.getDefaultInstance(props, null);
-        // wohl auch mit MimeMessage möglich
-        MimeBodyPart encrypted = new MimeBodyPart(inputStream);
-        SMIMEEnveloped message = new SMIMEEnveloped(encrypted);
-
-        RecipientInformationStore recinfos = message.getRecipientInfos();
-        KeyStoreHandler ksh = new KeyStoreHandler(context);
-        //Enumeration aliases = this.keystore.aliases();
-        List<String> aliases = null;
-        RecipientInformation recid = null;
-        String alias = null;
-        try {
-            aliases = ksh.getAllAliases();
-            for(String s : aliases) {
-            //while ((recid == null) && aliases.hasMoreElements()) {
-                //alias = aliases.nextElement();
-                alias = s;
-                if (ksh.containsAlias(alias))
-                    recid = recinfos.get(new JceKeyTransRecipientId((X509Certificate) ksh.getSingleCert((alias))));
-                if(recid != null)
-                    break;
-            }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-        if (recid == null)
-            throw new RuntimeException("No decryption key found");
-
-        JceKeyTransEnvelopedRecipient recipient = null;
-        try {
-            recipient = new JceKeyTransEnvelopedRecipient(ksh.getPrivKey(alias, privKeyPasswd));
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
-
-        byte[] content = recid.getContent(recipient);
-
-        MimeMessage decrypted = new MimeMessage(Session.getDefaultInstance(System.getProperties()), new ByteArrayInputStream(content));
-        decrypted.saveChanges();
-        return decrypted;
-    }
+//
+//        return body;
+//    }
+//
+//    /**
+//     *
+//     * @param ksFile keystore filename
+//     * @param ksPassword password of the keystore
+//     * @param alias alias for private key and certificate chain
+//     * @param privKeyPasswd
+//     * @return the decrypted ciphertext
+//     */
+//    public String decrypt(String ksFile, char[] ksPassword, String alias, char[] privKeyPasswd, InputStream inputStream) throws KeyStoreException, IOException, MessagingException, CMSException, NoSuchFieldException, SMIMEException {
+//        KeyStoreHandler ksh = new KeyStoreHandler(context);
+//        ksh.getKeyStoreSize();
+//
+//        Security.addProvider(new BouncyCastleProvider());
+//        Certificate[] certarray = ksh.getCertChain(alias);
+//        X509Certificate cert = (X509Certificate)certarray[certarray.length-1];
+//        RecipientId recId = new JceKeyTransRecipientId(cert);
+//
+//        // Get a Session object with the default properties.
+//        Properties props = System.getProperties();
+//        Session session = Session.getDefaultInstance(props, null);
+//        MimeMessage msg = new MimeMessage(session, inputStream);
+//        //TODO NullPointer, obwohl msg nicht null war - prüfen!!!!!!!
+//        SMIMEEnveloped m = new SMIMEEnveloped(msg);
+//
+//        RecipientInformationStore recipients = m.getRecipientInfos();
+//        RecipientInformation recipient = recipients.get(recId);
+//
+//        MimeBodyPart res = SMIMEUtil.toMimeBodyPart(recipient.getContent(new JceKeyTransEnvelopedRecipient(ksh.getPrivKey(alias, privKeyPasswd)).setProvider("BC")));
+//
+////        System.out.println("Message Contents");
+////        System.out.println("----------------");
+////        System.out.println(res.getContent());
+//        return res.getContent().toString();
+////        String mailtext = "decrypted mail";
+////        String provider = this.context.getResources().getString(R.string.ks_provider);
+////        if (Security.getProvider(provider) == null)
+////            Security.addProvider(new BouncyCastleProvider());
+////        SMIMEToolkit toolkit = new SMIMEToolkit(new BcDigestCalculatorProvider());
+////
+////        Properties props = System.getProperties();
+////        Session session = Session.getDefaultInstance(props);
+////
+////       SMIMEEnveloped m = null;
+////        MimeMessage msg = null;
+////        try {
+////            msg = new MimeMessage(session, inputStream);
+////         //   m = new SMIMEEnveloped(msg);
+////        } catch (MessagingException e1) {
+////            e1.printStackTrace();
+////      //  } catch (CMSException e1) {
+////       //     e1.printStackTrace();
+////        }
+////
+////        MimeBodyPart res = new MimeBodyPart();
+////        MimeMultipart mm = (MimeMultipart) m.getEncryptedContent();
+////
+////        MimeMessage body = new MimeMessage(session);
+////        try {
+//////            body.setFrom(msg.getFrom());
+////            // assume there is only one recipient
+////            body.setRecipient(Message.RecipientType.TO, msg.getAllRecipients()[0]);
+////            body.setSubject(msg.getSubject());
+////            body.setContent(msg, msg.getContentType());
+////            body.saveChanges();
+////        } catch (MessagingException e) {
+////            e.printStackTrace();
+////        }
+////
+////        Certificate[] reciCert = null;
+////        PrivateKey privKey = null;
+////        try {
+////            KeyStoreHandler ksh = new KeyStoreHandler(this.context);
+//////            List<X509Certificate> x509 = ksh.getAllCertificates();
+////            reciCert = ksh.getCertChain(alias);
+////            privKey = ksh.getPrivKey(alias, privKeyPasswd);
+////        } catch (NoSuchFieldException e) {
+////            e.printStackTrace();
+////        } catch (KeyStoreException e) {
+////            e.printStackTrace();
+////        }
+////
+//////        MimeBodyPart body = null;
+////        try {
+////            // set empty header to avoid NullPointerException in toolkit.decrypt
+////            InternetHeaders ih = new InternetHeaders();
+////            ih.addHeaderLine("");
+////            body = new MimeBodyPart(ih, Base64.decode(content));
+////        } catch (MessagingException e) {
+////            e.printStackTrace();
+////        }
+////       if(reciCert != null && privKey != null) {
+////           MimeBodyPart dec = new MimeBodyPart();
+////           try {
+////               JceKeyTransRecipientId jktci = new JceKeyTransRecipientId((X509Certificate)reciCert[0]);
+////               JceKeyTransEnvelopedRecipient jkter = new JceKeyTransEnvelopedRecipient(privKey);
+////               jkter.setProvider(provider);
+////               dec = toolkit.decrypt(body, jktci , jkter);
+////               if(dec == null)
+////                   mailtext = "recipient ID cannot be matched";
+////               else
+////                   mailtext = dec.getContent().toString();
+////           } catch (SMIMEException e) {
+////               e.printStackTrace();
+////           } catch (MessagingException e) {
+////               e.printStackTrace();
+////           } catch (IOException e) {
+////               e.printStackTrace();
+////           }
+////       } else {
+////           mailtext = "missing recipient certificate and private key";
+////       }
+////       return mailtext;
+//    }
+//
+//    /**
+//     *
+//     * @param privKeyPasswd
+//     * @param inputStream
+//     * @return
+//     * @throws MessagingException
+//     * @throws CMSException
+//     */
+//    public MimeMessage decrypt1(char[] privKeyPasswd, InputStream inputStream) throws MessagingException, CMSException {
+//        //Properties props = System.getProperties();
+//        //Session session = Session.getDefaultInstance(props, null);
+//        // wohl auch mit MimeMessage möglich
+//        MimeBodyPart encrypted = new MimeBodyPart(inputStream);
+//        SMIMEEnveloped message = new SMIMEEnveloped(encrypted);
+//
+//        RecipientInformationStore recinfos = message.getRecipientInfos();
+//        KeyStoreHandler ksh = new KeyStoreHandler(context);
+//        //Enumeration aliases = this.keystore.aliases();
+//        List<String> aliases = null;
+//        RecipientInformation recid = null;
+//        String alias = null;
+//        try {
+//            aliases = ksh.getAllAliases();
+//            for(String s : aliases) {
+//            //while ((recid == null) && aliases.hasMoreElements()) {
+//                //alias = aliases.nextElement();
+//                alias = s;
+//                if (ksh.containsAlias(alias))
+//                    recid = recinfos.get(new JceKeyTransRecipientId((X509Certificate) ksh.getSingleCert((alias))));
+//                if(recid != null)
+//                    break;
+//            }
+//        } catch (KeyStoreException e) {
+//            e.printStackTrace();
+//        }
+//        if (recid == null)
+//            throw new RuntimeException("No decryption key found");
+//
+//        JceKeyTransEnvelopedRecipient recipient = null;
+//        try {
+//            recipient = new JceKeyTransEnvelopedRecipient(ksh.getPrivKey(alias, privKeyPasswd));
+//        } catch (NoSuchFieldException e) {
+//            e.printStackTrace();
+//        }
+//
+//        byte[] content = recid.getContent(recipient);
+//
+//        MimeMessage decrypted = new MimeMessage(Session.getDefaultInstance(System.getProperties()), new ByteArrayInputStream(content));
+//        decrypted.saveChanges();
+//        return decrypted;
+//    }
 }

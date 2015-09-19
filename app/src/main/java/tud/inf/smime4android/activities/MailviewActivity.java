@@ -65,24 +65,24 @@ public class MailviewActivity extends ActionBarActivity {
             try {
                 ciphertext = readTextFromUri(this, intent.getData());
                 CryptMail dm = new CryptMail(this);
-                try {
-                    content.setText(dm.decrypt(null,null,alias,password, fs));
-                } catch (KeyStoreException e) {
-                    content.setText(e.toString());
-                    e.printStackTrace();
-                } catch (MessagingException e) {
-                    content.setText(e.toString());
-                    e.printStackTrace();
-                } catch (CMSException e) {
-                    content.setText(e.toString());
-                    e.printStackTrace();
-                } catch (NoSuchFieldException e) {
-                    content.setText(e.toString());
-                    e.printStackTrace();
-                } catch (SMIMEException e) {
-                    content.setText(e.toString());
-                    e.printStackTrace();
-                }
+//                try {
+//                    content.setText(dm.decrypt(null,null,alias,password, fs));
+//                } catch (KeyStoreException e) {
+//                    content.setText(e.toString());
+//                    e.printStackTrace();
+//                } catch (MessagingException e) {
+//                    content.setText(e.toString());
+//                    e.printStackTrace();
+//                } catch (CMSException e) {
+//                    content.setText(e.toString());
+//                    e.printStackTrace();
+//                } catch (NoSuchFieldException e) {
+//                    content.setText(e.toString());
+//                    e.printStackTrace();
+//                } catch (SMIMEException e) {
+//                    content.setText(e.toString());
+//                    e.printStackTrace();
+//                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
