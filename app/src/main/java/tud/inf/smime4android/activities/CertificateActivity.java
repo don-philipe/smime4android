@@ -78,7 +78,7 @@ public class CertificateActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        ksh = new KeyStoreHandler(getApplicationContext());
+//        ksh = new KeyStoreHandler(getApplicationContext());
 //        ksh.initKeyStore();
 
         final Intent intent = getIntent();
@@ -113,15 +113,15 @@ public class CertificateActivity extends ActionBarActivity {
                 public void onClick(DialogInterface dialog, int id) {
                     String password = alias.getText().toString();
                     //addCertificateToKS(intent.getData(), password);
-                    try {
-                        ksh.importPkcs12File(getFIS(context, intent.getData()),password.toCharArray(),null); //TODO privKeyPassword???
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (CertificateException e) {
-                        e.printStackTrace();
-                    } catch (UnrecoverableKeyException e) {
-                        e.printStackTrace();
-                    }
+//                    try {
+//                        ksh.importPkcs12File(getFIS(context, intent.getData()),password.toCharArray(),null); //TODO privKeyPassword???
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    } catch (CertificateException e) {
+//                        e.printStackTrace();
+//                    } catch (UnrecoverableKeyException e) {
+//                        e.printStackTrace();
+//                    }
                 }
             });
             builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
@@ -177,7 +177,7 @@ public class CertificateActivity extends ActionBarActivity {
             for (int i = 0; i<certificates.size(); i++){
                 certArray[i] = certificates.get(i);
             }
-            ksh.addPrivKeyAndCertificate("alias", certArray, keyPair.getPrivate(), password.toCharArray());
+//            ksh.addPrivKeyAndCertificate("alias", certArray, keyPair.getPrivate(), password.toCharArray());
 
             updateList();
             // TODO Add to list
@@ -260,7 +260,7 @@ public class CertificateActivity extends ActionBarActivity {
                         .setTitle(R.string.dialog_delete_item_title);
                 builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                      ksh.removeCertificate("alias");
+//                      ksh.removeCertificate("alias");
                         //TODO hardcoded, find out alias and delete it
                         updateList();
 

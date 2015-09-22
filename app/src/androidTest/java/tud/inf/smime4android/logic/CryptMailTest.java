@@ -4,32 +4,15 @@ import android.content.Context;
 import android.test.InstrumentationTestCase;
 
 import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.RecipientInformation;
-import org.bouncycastle.cms.RecipientInformationStore;
-import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
-import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
-import org.bouncycastle.mail.smime.SMIMEEnveloped;
-import org.bouncycastle.mail.smime.SMIMEException;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.util.encoders.Base64;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.KeyStoreException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.LinkedList;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
 
 import tud.inf.smime4android.R;
 
@@ -106,6 +89,53 @@ public class CryptMailTest extends InstrumentationTestCase {
         } catch (MessagingException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assertEquals(plaintext.length, decrypted128.length);
+        assertEquals(new String(plaintext), new String(decrypted128));
+        assertEquals(plaintext.length, decrypted192.length);
+        assertEquals(new String(plaintext), new String(decrypted192));
+        assertEquals(plaintext.length, decrypted256.length);
+        assertEquals(new String(plaintext), new String(decrypted256));
+    }
+
+    /**
+     *
+     */
+    public void testDecryptWithKeyStoreHandler() {
+        Context targetcontext = getInstrumentation().getTargetContext();
+        targetcontext.deleteFile(targetcontext.getResources().getString(R.string.ks_filename));
+        InputStream p12 = targetcontext.getResources().openRawResource(R.raw.key_and_cert_p12);
+        char[] p12_passwd = {'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
+        char[] ks_passwd = {'p', 'a', 's', 's', 'w', 'd'};
+
+        try {
+            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, ks_passwd);
+            ksh.importPKCS12(p12, p12_passwd, null);
+            ksh.storeKeyStore();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        InputStream p7m128 = targetcontext.getResources().openRawResource(R.raw.test128message_p7m);
+        InputStream p7m192 = targetcontext.getResources().openRawResource(R.raw.test192message_p7m);
+        InputStream p7m256 = targetcontext.getResources().openRawResource(R.raw.test256message_p7m);
+
+        CryptMail cm = new CryptMail(targetcontext);
+        byte[] decrypted128 = new byte[0];
+        byte[] decrypted192 = new byte[0];
+        byte[] decrypted256 = new byte[0];
+        try {
+            decrypted128 = cm.decrypt(p7m128, ks_passwd);
+            decrypted192 = cm.decrypt(p7m192, ks_passwd);
+            decrypted256 = cm.decrypt(p7m256, ks_passwd);
+        } catch (MessagingException e) {
             e.printStackTrace();
         }
         assertEquals(plaintext.length, decrypted128.length);

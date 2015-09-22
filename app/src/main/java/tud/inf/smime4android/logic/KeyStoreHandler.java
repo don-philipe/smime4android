@@ -2,410 +2,158 @@ package tud.inf.smime4android.logic;
 
 import android.content.Context;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
 
 import tud.inf.smime4android.R;
 
 
 /**
+ * This class stores keys, especially the private key, and certificates permanently.
  * Created by don on 24.06.15.
  */
 public class KeyStoreHandler {
 
     private Context context;
-    private final String ANDROID_KEYSTORE = "AndroidKeyStore";
+    private final String keystorefile;
     private KeyStore ks;
-
-    public KeyStoreHandler(Context context) {
-        this.context = context;
-        initKeyStore();
-    }
+    private final char[] passwd;
 
     /**
      *
+     * @param context app context
+     * @param passwd password for keystore
+     * @throws KeyStoreException in case of error while getting keystore instance.
+     * @throws CertificateException in case of error with loading certificate from store.
      */
-    public void initKeyStore() {
+    public KeyStoreHandler(Context context, char[] passwd) throws KeyStoreException, CertificateException {
+        this.context = context;
+        this.passwd = passwd;
+        this.keystorefile = this.context.getResources().getString(R.string.ks_filename);
         try {
-            ks = KeyStore.getInstance(ANDROID_KEYSTORE);
-        } catch (KeyStoreException e) {
+            this.ks = KeyStore.getInstance("PKCS12", "BC");
+        } catch (NoSuchProviderException e) {
             e.printStackTrace();
         }
+
         try {
-            ks.load(null);
+            InputStream inputStream = this.context.openFileInput(this.keystorefile);
+            this.ks.load(inputStream, this.passwd);
+        } catch (FileNotFoundException e) {
+            try {
+                this.ks.load(null, this.passwd);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            } catch (NoSuchAlgorithmException e1) {
+                e1.printStackTrace();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
         }
     }
 
-    public int keyStoreSize() {
-        int result = 0;
-        try {
-           result = ks.size();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
     /**
      *
-     * @return
-     * @throws CertificateException
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchProviderException
-     * @throws KeyStoreException
+     * @return false in case something went wrong with writing the file. Stacktrace will be printed as well.
+     * @throws CertificateException if something is wrong with the certificate to be written.
+     * @throws KeyStoreException if the keystore is not initialized.
      */
-    public boolean keyStorePresent() throws CertificateException, NoSuchAlgorithmException, NoSuchProviderException, KeyStoreException {
-//        KeyStore ks = KeyStore.getInstance(ANDROID_KEYSTORE);
-//        File keystorefile = new File(this.ksFileName);
-//        try {
-//            ks.load(new FileInputStream(this.context.getFilesDir() + "/" + keystorefile), this.ksPassword);
-//            return true;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return false;
-//        }
+    public boolean storeKeyStore() throws CertificateException, KeyStoreException {
+        try {
+            OutputStream outputStream = this.context.openFileOutput(this.keystorefile, Context.MODE_PRIVATE);
+            this.ks.store(outputStream, this.passwd);
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return false;
+        }
         return true;
     }
 
     /**
-     * Adds the private key with password and corresponding certificate chain to the keystore.
-     * @param alias key alias
-     * @param certs certificate chain where certs[0] is the clients certificate, certs[1] ... certs[n] are intermediate certificates and certs[n+1] is the root certificate
-     * @param privkey
-     * @param keyPassword password for the private key
+     * The imported PKCS#12 file should only contain one private key and one certificate. In other
+     * words, only one alias should exist in the file.
+     * @param p12 the PKCS#12 file
+     * @param pkcs12Passwd the password protecting the PKCS#12 file
+     * @param privKeyPasswd password for private key if necessary, can be null in case no one is set.
+     * @throws KeyStoreException in case something went wrong with getting keystore instance or keystore
+     * cannot be initialized.
+     * @throws IOException if the p12 inputstream cannot be read.
+     * @throws UnrecoverableKeyException if key cannot be recovered
      */
-    public void addPrivKeyAndCertificate(String alias, Certificate[] certs, PrivateKey privkey, char[] keyPassword) {
+    public void importPKCS12(InputStream p12, char[] pkcs12Passwd, char[] privKeyPasswd) throws KeyStoreException,
+            IOException, UnrecoverableKeyException {
         try {
-            ks.setKeyEntry(alias, privkey, null, certs);
-            this.storeKeyStore(ks);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Adds a single certificate e.g. a root certificate to the keystore.
-     * @param alias name under which the certificate can be found in the keystore
-     * @param cert the certificate itself
-     */
-    public void addCertificate(String alias, Certificate cert) {
-        try {
-            this.ks.setCertificateEntry(alias, cert);
-            this.storeKeyStore(this.ks);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     *
-     * @param alias
-     * @param pubKey
-     * @param certs
-     */
-    public void addPubKey(String alias, PublicKey pubKey, Certificate[] certs) {
-        try {
-            this.ks.setKeyEntry(alias, pubKey, null, certs);
-            this.storeKeyStore(this.ks);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     *
-     * @return null in case something went wrong while loading keystorefile
-     * @throws
-     */
-    public List<X509Certificate> getAllCertificates() throws NoSuchFieldException {
-        List<X509Certificate> certlist = new LinkedList<X509Certificate>();
-        Certificate[] certArray;
-        try {
-            if(ks != null) {
-                List<String> allAliases = this.getAllAliases();
-                for(String s : allAliases) {
-
-                        certArray = ks.getCertificateChain(s);
-                        for (int i = 0; i < certArray.length; i++){
-                            certlist.add((X509Certificate) certArray[i]);
-                        }
-//                        certlist.add((X509Certificate) ks.getCertificate(s));
-
-                }
+            KeyStore pkcs12 = KeyStore.getInstance("PKCS12", "BC");
+            pkcs12.load(p12, pkcs12Passwd);
+            Enumeration<String> aliases = pkcs12.aliases();
+            while(aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                this.ks.setCertificateEntry(alias, pkcs12.getCertificate(alias));
+                this.ks.setKeyEntry(alias,
+                        pkcs12.getKey(alias, privKeyPasswd),
+                        privKeyPasswd,
+                        new Certificate[]{pkcs12.getCertificate(alias)});
             }
-            else
-                throw new NoSuchFieldException("can't get keystore");
-        } catch (KeyStoreException e) {
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
-        return certlist;
+    }
+
+    /**
+     *
+     * @param alias for certificate
+     * @return a certificate
+     * @throws KeyStoreException if keystore is not initialized
+     */
+    public Certificate getCertificate(String alias) throws KeyStoreException {
+        return this.ks.getCertificate(alias);
     }
 
     /**
      *
      * @param alias for private key
-     * @param passwd private key password
-     * @return private key if present, null otherwise
-     * @throws NoSuchFieldException
-     */
-    public PrivateKey getPrivKey(String alias, char[] passwd) throws NoSuchFieldException{
-        try {
-            if(this.ks != null) {
-                return (PrivateKey) this.ks.getKey(alias, passwd);
-            }
-            else
-                throw new NoSuchFieldException("can't get keystore");
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableKeyException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
-     *
-     * @param alias
-     * @return
-     */
-    public boolean removeCertificate(String alias) {
-        boolean success = false;
-
-        try {
-                ks.deleteEntry(alias);
-                this.storeKeyStore(ks);
-                success = true;
-
-
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-
-        }
-        return success;
-    }
-
-    /**
-     *
-     * @param alias
-     * @return
-     */
-    public boolean removePrivKey(String alias) {
-        boolean success = false;
-        try {
-            if(this.ks.isKeyEntry(alias)) {
-                this.ks.deleteEntry(alias);
-                this.storeKeyStore(this.ks);
-                success = true;
-            }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return success;
-    }
-
-    /**
-     *
-     * @return can be null
-     * @throws NoSuchFieldException
-     */
-    protected KeyStore loadKeyStore() throws NoSuchFieldException {
-        try {
-            ks = KeyStore.getInstance("AndroidKeyStore");
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-//        try {
-//            InputStream inputStream = this.context.openFileInput(this.ksFileName);
-//            ks.load(inputStream, this.ksPassword);
-//            inputStream.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        } catch (CertificateException e) {
-//            e.printStackTrace();
-//        }
-        return ks;
-    }
-
-    /**
-     * If anything goes wrong exceptions will be thrown.
-     * @param ks
-     * @throws IOException
-     * @throws CertificateException
-     * @throws NoSuchAlgorithmException
-     * @throws KeyStoreException
-     */
-    protected void storeKeyStore(KeyStore ks) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
-//        OutputStream outputStream = this.context.openFileOutput(this.ksFileName, Context.MODE_PRIVATE);
-//        ks.store(outputStream, this.ksPassword);
-//        outputStream.flush();
-//        outputStream.close();
-    }
-
-    /**
-     * Returns number of entries in keystore.
-     * @return number of entries stored in keystore.
-     * @throws KeyStoreException
-     */
-    public int getKeyStoreSize() throws KeyStoreException {
-        return ks.size();
-    }
-
-    /**
-     * Tests if an alias is present in the keystore
-     * @param alias the alias to search for
-     * @return wheather alias is present or not
+     * @param passwd can be null if none is set
+     * @return the private key or null if something goes wrong
+     * @throws UnrecoverableKeyException if key cant be recovered (e.g. wrong password)
      * @throws KeyStoreException if keystore is not initialized
      */
-    public boolean containsAlias(String alias) throws KeyStoreException {
+    public PrivateKey getPrivateKey(String alias, char[] passwd) throws UnrecoverableKeyException, KeyStoreException {
+        PrivateKey privkey = null;
         try {
-            this.ks = this.loadKeyStore();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
-        return ks.containsAlias(alias);
-    }
-
-    /**
-     * Gives you a single certificate which is associated with the given alias.
-     * Can't give you individual certificates from a certificate chain.
-     * @param alias
-     * @return
-     * @throws KeyStoreException
-     */
-    public Certificate getSingleCert(String alias) throws KeyStoreException {
-        return ks.getCertificate(alias);
-    }
-
-    /**
-     * Gives you a certificate chain associated with the given alias. But returns nothing if the alias
-     * belongs to a certificate that was saved as a individual one.
-     * @param alias alias of the certificate chain
-     * @return certificate chain in the following form: chain[0] - user cert, chain[1...n] intermediate certs, chain[n+1] root cert
-     * @throws KeyStoreException if keystore is not initialized
-     */
-    public Certificate[] getCertChain(String alias) throws KeyStoreException {
-        return ks.getCertificateChain(alias);
-    }
-
-    /**
-     * Load a pkcs12 file, usually ending with ".p12".
-     * Private keys which have already a password will be protected with the same password in local
-     * keystore.
-     * @param fileInputStream input stream to pkcs12 file.
-     * @param ksPasswd password to pkcs12 file.
-     * @param privKeyPasswd password to recover the private key.
-     * @throws IOException if a problem occurred while reading from the stream.
-     * @throws CertificateException if an exception occurred while loading the certificates of this
-     * KeyStore.
-     * @throws UnrecoverableKeyException in case the private key cannot be recovered, usually this
-     * is the case when the wrong password is passed.
-     */
-    public void importPkcs12File(FileInputStream fileInputStream, char[] ksPasswd, char[] privKeyPasswd)
-            throws IOException, CertificateException, UnrecoverableKeyException {
-        String provider = this.context.getResources().getString(R.string.ks_provider);
-        if (Security.getProvider(provider) == null)
-            Security.addProvider(new BouncyCastleProvider());
-        try {
-            KeyStore pkcs12 = KeyStore.getInstance("PKCS12", provider);
-            pkcs12.load(fileInputStream, ksPasswd);
-            Enumeration<String> e = pkcs12.aliases();
-            while(e.hasMoreElements()) {
-                String alias = e.nextElement();
-                Certificate[] certchain = pkcs12.getCertificateChain(alias);
-                //PrivateKey pk = (PrivateKey) pkcs12.getKey(alias, privKeyPasswd);
-                PrivateKey pk = (PrivateKey) pkcs12.getKey(alias, null);
-                if(pk != null) {
-                    try {
-                        this.ks.setKeyEntry(alias, pk, privKeyPasswd, certchain);
-                    } catch (KeyStoreException ex){
-                        this.initKeyStore();
-                        this.ks.setKeyEntry(alias, pk, privKeyPasswd, certchain);
-                        //this.ks.setKeyEntry(alias,pk.getEncoded(),certchain);//encoding not supported -.-
-                    }
-                }
-                else if(certchain != null)   // its just an intermediate or root certificate we got
-                    this.ks.setCertificateEntry(alias, certchain[0]);
-            }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
+            privkey = (PrivateKey) this.ks.getKey(alias, passwd);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
         }
+        return privkey;
     }
 
     /**
-     * Return every alias, no matter if its a certificate or a key alias.
-     * @return can return empty list if no aliases present in the keystore
-     * @throws KeyStoreException
+     *
+     * @return all aliases present in keystore
+     * @throws KeyStoreException in case keystore is not initialized
      */
-    protected List<String> getAllAliases() throws KeyStoreException {
-        Enumeration e = ks.aliases();
-        List<String> keyAliases = new LinkedList<String>();
-        while (e.hasMoreElements()) {
-            keyAliases.add((String) e.nextElement());
-        }
-        return keyAliases;
+    public Enumeration<String> getAliases() throws KeyStoreException {
+        return this.ks.aliases();
     }
-
 }

@@ -52,7 +52,7 @@
     <string name="certview_plaintext">unknown</string>
 
 
-    <string name="ks_filename">keystore.file</string>
+    <string name="ks_filename">keystore.p12</string>
     <string name="ks_type">PKCS12</string>
     <string name="ks_provider">BC</string>
     <string name="title_activity_certificate">Certificates</string>
