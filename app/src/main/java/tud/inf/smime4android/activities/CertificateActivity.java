@@ -1,17 +1,14 @@
 package tud.inf.smime4android.activities;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Base64;
 import android.view.ContextMenu;
@@ -21,7 +18,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -72,14 +68,20 @@ public class CertificateActivity extends ActionBarActivity {
     public ListView listView = null;
     public StableArrayAdapter adapter = null;
     private KeyStoreHandler ksh = null;
-    private EditText alias;
+    private EditText privkeypw;
+    private EditText pkcs12pw;
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-//        ksh = new KeyStoreHandler(getApplicationContext());
-//        ksh.initKeyStore();
+        try {
+            ksh = new KeyStoreHandler(getApplicationContext(),"".toCharArray());
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        }
 
         final Intent intent = getIntent();
 
@@ -107,21 +109,32 @@ public class CertificateActivity extends ActionBarActivity {
             builder.setTitle("Enter password for private Key");
             LayoutInflater inflater = getLayoutInflater();
             View dialogView = inflater.inflate(R.layout.dialog_addkeystore, null);
-            alias = (EditText) dialogView.findViewById(R.id.keystore_password);
+            pkcs12pw = (EditText) dialogView.findViewById(R.id.pkcs12_password);
+            privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
             final Context context = this;
             builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
-                    String password = alias.getText().toString();
-                    //addCertificateToKS(intent.getData(), password);
-//                    try {
-//                        ksh.importPkcs12File(getFIS(context, intent.getData()),password.toCharArray(),null); //TODO privKeyPassword???
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    } catch (CertificateException e) {
-//                        e.printStackTrace();
-//                    } catch (UnrecoverableKeyException e) {
-//                        e.printStackTrace();
-//                    }
+                    String privateKeyPassword = privkeypw.getText().toString();
+                    String pkcs12Password = pkcs12pw.getText().toString();
+
+                    InputStream is = null;
+                    try {
+                        is = getContentResolver().openInputStream(intent.getData());
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    try {
+                        try {
+                            ksh.importPKCS12(is, pkcs12Password.toCharArray(), privateKeyPassword.toCharArray());
+                        } catch (KeyStoreException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (UnrecoverableKeyException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
             builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
@@ -177,7 +190,7 @@ public class CertificateActivity extends ActionBarActivity {
             for (int i = 0; i<certificates.size(); i++){
                 certArray[i] = certificates.get(i);
             }
-//            ksh.addPrivKeyAndCertificate("alias", certArray, keyPair.getPrivate(), password.toCharArray());
+//            ksh.addPrivKeyAndCertificate("privkeypw", certArray, keyPair.getPrivate(), password.toCharArray());
 
             updateList();
             // TODO Add to list
@@ -260,8 +273,8 @@ public class CertificateActivity extends ActionBarActivity {
                         .setTitle(R.string.dialog_delete_item_title);
                 builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-//                      ksh.removeCertificate("alias");
-                        //TODO hardcoded, find out alias and delete it
+//                      ksh.removeCertificate("privkeypw");
+                        //TODO hardcoded, find out privkeypw and delete it
                         updateList();
 
                     }

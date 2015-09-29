@@ -92,7 +92,26 @@
                 <data android:scheme="file" />
                 <data android:scheme="content" />
                 <data android:mimeType="*/*" />
-
+                <data android:pathPattern=".*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.pfx" />
+                <data android:pathPattern=".*\\.p12" />
+                <data android:pathPattern=".*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.p12" />
                 <data android:pathPattern=".*\\.pem" />
                 <data android:pathPattern=".*\\..*\\.pem" />
                 <data android:pathPattern=".*\\..*\\..*\\.pem" />
