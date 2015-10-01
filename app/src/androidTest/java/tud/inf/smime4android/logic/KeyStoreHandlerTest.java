@@ -83,7 +83,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
     }
 
     /**
-     * 
+     *
      */
     public void testGetPrivateKeyAndCert() {
         Context targetcontext = getInstrumentation().getTargetContext();
@@ -99,7 +99,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             ksh.storeKeyStore();
 
             InputStream keystream = targetcontext.getResources().openRawResource(R.raw.key_pem);
-            PrivateKey exp_key = new JcaPEMKeyConverter().setProvider("BC")
+            PrivateKey exp_key = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME)
                     .getKeyPair((PEMKeyPair) (new PEMParser(new InputStreamReader(keystream))).readObject()).getPrivate();
             InputStream certstream = targetcontext.getResources().openRawResource(R.raw.cert_pem);
             X509Certificate exp_cert = null;

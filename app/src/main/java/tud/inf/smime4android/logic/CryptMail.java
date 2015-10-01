@@ -81,7 +81,7 @@ public class CryptMail {
 
         PrivateKey key = null;
         try {
-            key = new JcaPEMKeyConverter().setProvider("BC")
+            key = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME)
                     .getKeyPair((PEMKeyPair) (new PEMParser(new InputStreamReader(keystream))).readObject()).getPrivate();
         } catch (IOException e) {
             e.printStackTrace();
@@ -106,7 +106,7 @@ public class CryptMail {
         PrivateKey privateKey = null;
 
         try {
-			KeyStore ks = KeyStore.getInstance("PKCS12", "BC");
+			KeyStore ks = KeyStore.getInstance("PKCS12", BouncyCastleProvider.PROVIDER_NAME);
 			ks.load(p12, passwd);
 
             Enumeration<String> aliases = ks.aliases();
@@ -130,7 +130,7 @@ public class CryptMail {
 
 			if(recipientInfo != null) {
             	JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
-            	rec.setProvider("BC");
+            	rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
             	rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
 				decryptedByteData = recipientInfo.getContent(rec);
 //				decryptedByteData = Base64.decode(decryptedByteData);
@@ -173,7 +173,7 @@ public class CryptMail {
 
 			if(recipientInfo != null) {
             	JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
-            	rec.setProvider("BC");
+            	rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
             	rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
 				decryptedByteData = recipientInfo.getContent(rec);
 //				decryptedByteData = Base64.decode(decryptedByteData);

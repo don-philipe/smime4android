@@ -2,6 +2,8 @@ package tud.inf.smime4android.logic;
 
 import android.content.Context;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +44,7 @@ public class KeyStoreHandler {
         this.passwd = passwd;
         this.keystorefile = this.context.getResources().getString(R.string.ks_filename);
         try {
-            this.ks = KeyStore.getInstance("PKCS12", "BC");
+            this.ks = KeyStore.getInstance("PKCS12", BouncyCastleProvider.PROVIDER_NAME);
         } catch (NoSuchProviderException e) {
             e.printStackTrace();
         }
@@ -100,7 +102,7 @@ public class KeyStoreHandler {
     public void importPKCS12(InputStream p12, char[] pkcs12Passwd, char[] privKeyPasswd) throws KeyStoreException,
             IOException, UnrecoverableKeyException {
         try {
-            KeyStore pkcs12 = KeyStore.getInstance("PKCS12", "BC");
+            KeyStore pkcs12 = KeyStore.getInstance("PKCS12", BouncyCastleProvider.PROVIDER_NAME);
             pkcs12.load(p12, pkcs12Passwd);
             Enumeration<String> aliases = pkcs12.aliases();
             while(aliases.hasMoreElements()) {
