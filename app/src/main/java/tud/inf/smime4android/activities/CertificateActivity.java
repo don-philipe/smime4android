@@ -38,6 +38,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -135,6 +136,14 @@ public class CertificateActivity extends ActionBarActivity {
                     } catch (UnrecoverableKeyException e) {
                         e.printStackTrace();
                     }
+                    try {
+                        ksh.storeKeyStore();
+                    } catch (CertificateException e) {
+                        e.printStackTrace();
+                    } catch (KeyStoreException e) {
+                        e.printStackTrace();
+                    }
+                    updateList();
                 }
             });
             builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
@@ -200,22 +209,18 @@ public class CertificateActivity extends ActionBarActivity {
     private void updateList() {
         List<X509Certificate> certificates = new ArrayList<X509Certificate>();
         list.clear();
+
         try {
-            KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
-            ks.load(null);
-            Enumeration<String> aliases = ks.aliases();
-            while(aliases.hasMoreElements())
-                list.add(aliases.nextElement());
+            Enumeration<String> aliases = ksh.getAliases();
+            while(aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                list.add(alias);
+            }
+
             //certificates = ksh.getAllCertificates();
         //} catch (NoSuchFieldException e) {
         //    e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
         } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
         //for (int i = 0; i<certificates.size(); i++){
