@@ -20,6 +20,8 @@
     <string name="dialog_keystore_alias">Enter Keystore alias</string>
     <string name="dialog_keystore_filename">Keystore file name</string>
     <string name="dialog_keystore_password">Keystore password</string>
+    <string name="dialog_pkcs12_password">PKCS12 password</string>
+    <string name="dialog_privatekey_password">private key password</string>
 
 
 
