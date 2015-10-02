@@ -72,7 +72,8 @@ public class MailviewActivity extends ActionBarActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                byte[] decryptedMessage = dm.decrypt(is, "".toCharArray());
+                //TODO: make the two passwords changeable
+                byte[] decryptedMessage = dm.decrypt(is, "".toCharArray(), null);
                 String answer = new String(decryptedMessage);
                 content.setText(answer);
             } catch (IOException e) {

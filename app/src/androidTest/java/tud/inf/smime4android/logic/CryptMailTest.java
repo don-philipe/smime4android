@@ -83,9 +83,9 @@ public class CryptMailTest extends InstrumentationTestCase {
         byte[] decrypted192 = new byte[0];
         byte[] decrypted256 = new byte[0];
         try {
-            decrypted128 = cm.decrypt(p7m128, p12128, passwd);
-            decrypted192 = cm.decrypt(p7m192, p12192, passwd);
-            decrypted256 = cm.decrypt(p7m256, p12256, passwd);
+            decrypted128 = cm.decrypt(p7m128, p12128, passwd, null);
+            decrypted192 = cm.decrypt(p7m192, p12192, passwd, null);
+            decrypted256 = cm.decrypt(p7m256, p12256, passwd, null);
         } catch (MessagingException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -132,9 +132,9 @@ public class CryptMailTest extends InstrumentationTestCase {
         byte[] decrypted192 = new byte[0];
         byte[] decrypted256 = new byte[0];
         try {
-            decrypted128 = cm.decrypt(p7m128, ks_passwd);
-            decrypted192 = cm.decrypt(p7m192, ks_passwd);
-            decrypted256 = cm.decrypt(p7m256, ks_passwd);
+            decrypted128 = cm.decrypt(p7m128, ks_passwd, null);
+            decrypted192 = cm.decrypt(p7m192, ks_passwd, null);
+            decrypted256 = cm.decrypt(p7m256, ks_passwd, null);
         } catch (MessagingException e) {
             e.printStackTrace();
         }

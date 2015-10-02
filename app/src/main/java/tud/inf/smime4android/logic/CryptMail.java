@@ -96,11 +96,12 @@ public class CryptMail {
      * @param p7m the p7m file to decrypt
      * @param p12 the keystore with the private key inside
      * @param passwd the password for the p12 file
+     * @param privkeypasswd password for the private key, can be null of it is not set
      * @return plaintext
      * @throws MessagingException in case of issues with the p7m inputstream
      * @throws IOException if a problem occurred while reading from the p12 stream
      */
-    public byte[] decrypt(InputStream p7m, InputStream p12, char[] passwd) throws MessagingException, IOException {
+    public byte[] decrypt(InputStream p7m, InputStream p12, char[] passwd, char[] privkeypasswd) throws MessagingException, IOException {
         byte[] decryptedByteData = new byte[0];
         Certificate cert = null;
         PrivateKey privateKey = null;
@@ -114,7 +115,7 @@ public class CryptMail {
             while((cert == null || privateKey == null) && aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
                 cert = ks.getCertificate(alias);
-                privateKey = (PrivateKey) ks.getKey(alias, null);
+                privateKey = (PrivateKey) ks.getKey(alias, privkeypasswd);
             }
 
 			X509Certificate x509Cert = (X509Certificate) cert;
@@ -144,7 +145,15 @@ public class CryptMail {
         return decryptedByteData;
     }
 
-    public byte[] decrypt(InputStream p7m, char[] keystorepasswd) throws MessagingException {
+    /**
+     * Decrypt the p7m file with the help of the private key from the local keystore.
+     * @param p7m the file to decrypt
+     * @param keystorepasswd password for the local keystore
+     * @param privkeypasswd password for the private key, can be null of it is not set
+     * @return plaintext
+     * @throws MessagingException in case of an issues with the p7m inputstream
+     */
+    public byte[] decrypt(InputStream p7m, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException {
         byte[] decryptedByteData = new byte[0];
         Certificate cert = null;
         PrivateKey privateKey = null;
@@ -157,7 +166,7 @@ public class CryptMail {
             while((cert == null || privateKey == null) && aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
                 cert = ksh.getCertificate(alias);
-                privateKey = ksh.getPrivateKey(alias, null);
+                privateKey = ksh.getPrivateKey(alias, privkeypasswd);
             }
 
 			X509Certificate x509Cert = (X509Certificate) cert;
