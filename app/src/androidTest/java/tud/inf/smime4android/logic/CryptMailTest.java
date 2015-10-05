@@ -110,7 +110,8 @@ public class CryptMailTest extends InstrumentationTestCase {
         char[] ks_passwd = {'p', 'a', 's', 's', 'w', 'd'};
 
         try {
-            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, ks_passwd);
+            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+            ksh.load(ks_passwd);
             ksh.importPKCS12(p12, p12_passwd, null);
             ksh.storeKeyStore();
         } catch (KeyStoreException e) {

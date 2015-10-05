@@ -40,7 +40,9 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         assertEquals(false, checkFileExistence(targetcontext, ".p12"));
 
         try {
-            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, passwd);
+            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+            assertEquals(false, ksh.exists());
+            ksh.load(passwd);
             ksh.storeKeyStore();
         } catch (CertificateException e) {
             e.printStackTrace();
@@ -60,7 +62,8 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         char[] ks_passwd = {'p', 'a', 's', 's', 'w', 'd'};
 
         try {
-            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, ks_passwd);
+            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+            ksh.load(ks_passwd);
             InputStream inp12 = targetcontext.getResources().openRawResource(R.raw.key_and_cert_p12);
             char[] p12_passwd = {'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
 
@@ -91,7 +94,8 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         char[] ks_passwd = {'p', 'a', 's', 's', 'w', 'd'};
 
         try {
-            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext, ks_passwd);
+            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+            ksh.load(ks_passwd);
             InputStream inp12 = targetcontext.getResources().openRawResource(R.raw.key_and_cert_p12);
             char[] p12_passwd = {'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
 

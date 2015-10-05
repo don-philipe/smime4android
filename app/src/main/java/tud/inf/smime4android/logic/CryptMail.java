@@ -150,7 +150,7 @@ public class CryptMail {
      * @param p7m the file to decrypt
      * @param keystorepasswd password for the local keystore
      * @param privkeypasswd password for the private key, can be null of it is not set
-     * @return plaintext
+     * @return plaintext a byte[0] in case no keystore exists
      * @throws MessagingException in case of an issues with the p7m inputstream
      */
     public byte[] decrypt(InputStream p7m, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException {
@@ -159,34 +159,37 @@ public class CryptMail {
         PrivateKey privateKey = null;
 
         try {
-			KeyStoreHandler ksh = new KeyStoreHandler(this.context, keystorepasswd);
+			KeyStoreHandler ksh = new KeyStoreHandler(this.context);
+            if(ksh.exists()) {
+                ksh.load(keystorepasswd);
 
-            Enumeration<String> aliases = ksh.getAliases();
+                Enumeration<String> aliases = ksh.getAliases();
 
-            while((cert == null || privateKey == null) && aliases.hasMoreElements()) {
-                String alias = aliases.nextElement();
-                cert = ksh.getCertificate(alias);
-                privateKey = ksh.getPrivateKey(alias, privkeypasswd);
+                while ((cert == null || privateKey == null) && aliases.hasMoreElements()) {
+                    String alias = aliases.nextElement();
+                    cert = ksh.getCertificate(alias);
+                    privateKey = ksh.getPrivateKey(alias, privkeypasswd);
+                }
+
+                X509Certificate x509Cert = (X509Certificate) cert;
+
+                MimeBodyPart encryptedMimeBodyPart = new MimeBodyPart(p7m);
+                SMIMEEnveloped enveloped = new SMIMEEnveloped(encryptedMimeBodyPart);
+
+                // look for our recipient identifier
+                RecipientId recipientId = new JceKeyTransRecipientId(x509Cert);
+
+                RecipientInformationStore recipients = enveloped.getRecipientInfos();
+                RecipientInformation recipientInfo = recipients.get(recipientId);
+
+                if (recipientInfo != null) {
+                    JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
+                    rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+                    rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
+                    decryptedByteData = recipientInfo.getContent(rec);
+                    //				decryptedByteData = Base64.decode(decryptedByteData);
+                }
             }
-
-			X509Certificate x509Cert = (X509Certificate) cert;
-
-			MimeBodyPart encryptedMimeBodyPart = new MimeBodyPart(p7m);
-			SMIMEEnveloped enveloped = new SMIMEEnveloped(encryptedMimeBodyPart);
-
-			// look for our recipient identifier
-			RecipientId recipientId = new JceKeyTransRecipientId(x509Cert);
-
-			RecipientInformationStore recipients = enveloped.getRecipientInfos();
-			RecipientInformation recipientInfo = recipients.get(recipientId);
-
-			if(recipientInfo != null) {
-            	JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
-            	rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-            	rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
-				decryptedByteData = recipientInfo.getContent(rec);
-//				decryptedByteData = Base64.decode(decryptedByteData);
-			}
 		} catch (GeneralSecurityException e) {
             e.printStackTrace();
 		} catch (CMSException e) {

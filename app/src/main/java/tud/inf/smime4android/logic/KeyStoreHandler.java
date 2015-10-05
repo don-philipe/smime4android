@@ -31,25 +31,48 @@ public class KeyStoreHandler {
     private Context context;
     private final String keystorefile;
     private KeyStore ks;
-    private final char[] passwd;
+    private char[] passwd;
 
     /**
      *
      * @param context app context
-     * @param passwd password for keystore
      * @throws KeyStoreException in case of error while getting keystore instance.
-     * @throws CertificateException in case of error with loading certificate from store.
      */
-    public KeyStoreHandler(Context context, char[] passwd) throws KeyStoreException, CertificateException {
+    public KeyStoreHandler(Context context) throws KeyStoreException {
         this.context = context;
-        this.passwd = passwd;
+
         this.keystorefile = this.context.getResources().getString(R.string.ks_filename);
         try {
             this.ks = KeyStore.getInstance("PKCS12", BouncyCastleProvider.PROVIDER_NAME);
         } catch (NoSuchProviderException e) {
             e.printStackTrace();
         }
+    }
 
+    /**
+     * Just for checking if it should be promted for an existing password or a new password for a new
+     * keystore. Existence should be checked when starting app.
+     * @return true for existing, false for not existing keystore file
+     */
+    public boolean exists() {
+        try {
+            this.context.openFileInput(this.keystorefile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Loads existing keystore. If no one exists, creates a new one.
+     * @param passwd password for keystore
+     * @return true in case of successfully loading an existing keystore, false in case of successfully
+     * creating (not-loading) a keystore
+     * @throws CertificateException in case of error with loading certificate from store.
+     */
+    public boolean load(char[] passwd) throws CertificateException {
+        this.passwd = passwd;
         try {
             InputStream inputStream = this.context.openFileInput(this.keystorefile);
             this.ks.load(inputStream, this.passwd);
@@ -61,11 +84,13 @@ public class KeyStoreHandler {
             } catch (NoSuchAlgorithmException e1) {
                 e1.printStackTrace();
             }
+            return false;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
+        return true;
     }
 
     /**

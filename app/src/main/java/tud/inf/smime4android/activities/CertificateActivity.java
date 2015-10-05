@@ -77,7 +77,12 @@ public class CertificateActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         try {
-            ksh = new KeyStoreHandler(getApplicationContext(),"".toCharArray());
+            char[] ks_password = "".toCharArray();
+            ksh = new KeyStoreHandler(getApplicationContext());
+            if(!ksh.exists())
+                //TODO: AlertDialog and promt for password
+                ks_password = "".toCharArray();
+            ksh.load(ks_password);
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
