@@ -1,14 +1,20 @@
 package tud.inf.smime4android.activities;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Base64;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.mail.smime.SMIMEException;
@@ -19,6 +25,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStoreException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 import javax.mail.MessagingException;
 
@@ -27,21 +35,25 @@ import tud.inf.smime4android.R;
 
 
 public class MailviewActivity extends ActionBarActivity {
+    private EditText privkeypw;
+    private EditText pkcs12pw;
+    private EditText keystorepw;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_s4);
 
+
         // Get the intent that started this activity
-        Intent intent = getIntent();
+        final Intent intent = getIntent();
         Uri data = intent.getData();
         String type = intent.getType();
 
         TextView sender = (TextView) findViewById(R.id.mailview_from_text);
         TextView subject = (TextView) findViewById(R.id.mailview_subject_text);
         TextView recipient = (TextView) findViewById(R.id.mailview_to_text);
-        TextView content = (TextView) findViewById(R.id.mailview_content);
+        final TextView content = (TextView) findViewById(R.id.mailview_content);
         //TODO prüfen:
         //if (intent.getType().equals("application/pkcs7-mime")) {
         sender.setText("Mickey Mouse");
@@ -61,26 +73,57 @@ public class MailviewActivity extends ActionBarActivity {
         if(intent.getData()!=null) {
             //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
 
-            String ciphertext;
-            try {
-                ciphertext = readTextFromUri(this, intent.getData());
-                CryptMail dm = new CryptMail(this);
+            final AlertDialog.Builder builder = new AlertDialog.Builder(MailviewActivity.this);
+            builder.setTitle("Enter Passwords");
+            LayoutInflater inflater = getLayoutInflater();
+            View dialogView = inflater.inflate(R.layout.dialog_decrypt_mail, null);
+            keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
+            privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
+            builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
 
-                InputStream is = null;
-                try {
-                    is = getContentResolver().openInputStream(intent.getData());
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                    try {
+                        CryptMail dm = new CryptMail(getApplicationContext());
+                        InputStream is = null;
+                        try {
+                            is = getContentResolver().openInputStream(intent.getData());
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        //TODO: make the two passwords changeable
+
+                        byte[] decryptedMessage = dm.decrypt(is, keystorepw.getText().toString().toCharArray(), privkeypw.getText().toString().toCharArray());
+                        String answer = new String(decryptedMessage);
+                        content.setText(answer);
+                    } catch (MessagingException e) {
+                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                        e.printStackTrace();
+                    } catch (UnrecoverableKeyException e) {
+                        showErrorDialog("Error", "Error while decrypting Mail: " + e.getMessage());
+                        e.printStackTrace();
+                    } catch (CertificateException e) {
+                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                        e.printStackTrace();
+                    } catch (KeyStoreException e) {
+                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                        e.printStackTrace();
+                    } catch (CMSException e) {
+                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
-                //TODO: make the two passwords changeable
-                byte[] decryptedMessage = dm.decrypt(is, "".toCharArray(), null);
-                String answer = new String(decryptedMessage);
-                content.setText(answer);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (MessagingException e) {
-                e.printStackTrace();
-            }
+            });
+            builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    // User cancelled the dialog
+                }
+            });
+            builder.setView(dialogView);
+            AlertDialog dialog = builder.create();
+            dialog.show();
 /*
             try {
                 DecryptMail dm = new DecryptMail(this);
@@ -95,6 +138,20 @@ public class MailviewActivity extends ActionBarActivity {
         }
         //}
     }
+
+    private void showErrorDialog(String title, String text) {
+
+        AlertDialog.Builder errorDialog = new AlertDialog.Builder(MailviewActivity.this);
+        errorDialog.setTitle(title);
+        errorDialog.setMessage(text);
+        errorDialog.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+            }
+        });
+        errorDialog.create().show();
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

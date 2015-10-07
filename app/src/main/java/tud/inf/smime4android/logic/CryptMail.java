@@ -20,8 +20,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -153,12 +155,11 @@ public class CryptMail {
      * @return plaintext a byte[0] in case no keystore exists
      * @throws MessagingException in case of an issues with the p7m inputstream
      */
-    public byte[] decrypt(InputStream p7m, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException {
+    public byte[] decrypt(InputStream p7m, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException {
         byte[] decryptedByteData = new byte[0];
         Certificate cert = null;
         PrivateKey privateKey = null;
 
-        try {
 			KeyStoreHandler ksh = new KeyStoreHandler(this.context);
             if(ksh.exists()) {
                 ksh.load(keystorepasswd);
@@ -190,11 +191,6 @@ public class CryptMail {
                     //				decryptedByteData = Base64.decode(decryptedByteData);
                 }
             }
-		} catch (GeneralSecurityException e) {
-            e.printStackTrace();
-		} catch (CMSException e) {
-            e.printStackTrace();
-		}
 
         return decryptedByteData;
     }

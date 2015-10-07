@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -38,11 +39,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-import java.security.Key;
 import java.security.KeyPair;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
@@ -71,53 +69,32 @@ public class CertificateActivity extends ActionBarActivity {
     private KeyStoreHandler ksh = null;
     private EditText privkeypw;
     private EditText pkcs12pw;
-
+    private EditText keystorepw;
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        try {
-            char[] ks_password = "".toCharArray();
-            ksh = new KeyStoreHandler(getApplicationContext());
-            if(!ksh.exists())
-                //TODO: AlertDialog and promt for password
-                ks_password = "".toCharArray();
-            ksh.load(ks_password);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        }
-
         final Intent intent = getIntent();
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_certificate);
 
-//        final Button bibabutzebutton = (Button) findViewById(R.id.button);
-//        bibabutzebutton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Context context = getApplicationContext();
-//                int duration = Toast.LENGTH_SHORT;
-//                 int size = ksh.keyStoreSize();
-//
-//                String text = "size " + size;
-//                Toast toast = Toast.makeText(context, text, duration);
-//                toast.show();
-//
-//            }
-//        });
+        try {
+            ksh = new KeyStoreHandler(getApplicationContext());
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+
+        loadKeyStore();
 
         if (intent.getData() != null) {
 
-            AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+            // ask for passwords of pcks file and private key
             builder.setTitle("Enter password for private Key");
             LayoutInflater inflater = getLayoutInflater();
-            View dialogView = inflater.inflate(R.layout.dialog_addkeystore, null);
+            View dialogView = inflater.inflate(R.layout.dialog_import_pkcs12, null);
             pkcs12pw = (EditText) dialogView.findViewById(R.id.pkcs12_password);
             privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
-            final Context context = this;
             builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     String privateKeyPassword = privkeypw.getText().toString();
@@ -134,18 +111,23 @@ public class CertificateActivity extends ActionBarActivity {
                         try {
                             ksh.importPKCS12(is, pkcs12Password.toCharArray(), privateKeyPassword.toCharArray());
                         } catch (KeyStoreException e) {
+                            showErrorDialog("Error", "Error importing PKCS12: " + e.getMessage());
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
+                        showErrorDialog("Error", "Error importing Keystore: " + e.getMessage());
                         e.printStackTrace();
                     } catch (UnrecoverableKeyException e) {
+                        showErrorDialog("Error", "Error importing Keystore: " + e.getMessage());
                         e.printStackTrace();
                     }
                     try {
                         ksh.storeKeyStore();
                     } catch (CertificateException e) {
+                        showErrorDialog("Error", "Error storing Keystore: " + e.getMessage());
                         e.printStackTrace();
                     } catch (KeyStoreException e) {
+                        showErrorDialog("Error", "Error storing Keystore: " + e.getMessage());
                         e.printStackTrace();
                     }
                     updateList();
@@ -163,14 +145,141 @@ public class CertificateActivity extends ActionBarActivity {
             // TODO dialog
 
         }
-            // gief password
-
               listView = (ListView) findViewById(R.id.certificates_listView);
             adapter = new StableArrayAdapter(this, list);
             listView.setEmptyView(findViewById(R.id.empty_listview));
             listView.setAdapter(adapter);
             updateList();
             registerForContextMenu(findViewById(R.id.certificates_listView));
+    }
+
+    /**
+     * the keystore-loading-routine
+     *
+     */
+    private void loadKeyStore() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+
+        if (ksh.exists()){
+            // existing keystore file found
+            builder.setTitle("Load existing Keystore");
+            LayoutInflater inflater = getLayoutInflater();
+            View dialogView = inflater.inflate(R.layout.dialog_keystore_password, null);
+            keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
+            builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    try {
+                        if (ksh.load(keystorepw.getText().toString().toCharArray())){
+                            Toast toast = Toast.makeText(getApplicationContext(), "Keystore file successfully loaded", Toast.LENGTH_SHORT);
+                            toast.show();
+                            updateList();
+                        } else {
+                            showErrorDialog("Error", "Keystore file loading failed");
+                        }
+                    } catch (CertificateException e) {
+                        showErrorDialog("Error", "Error loading Keystore:" + e.getMessage());
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        showErrorDialog("Error", "Error loading Keystore:" + e.getMessage());
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+            builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    // User cancelled the dialog
+                }
+            });
+            builder.setView(dialogView);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            //lade keystore, frage nach keystore pw
+            // toast: keystore geladen
+        } else {
+            // no existing keystore file found
+            showNoKeystoreFoundDialog("Attention","No Keystore file found. Create new one?");
+        }
+    }
+
+    /**
+     * shows the dialog to load an existing keystore file
+     * OK loads the file
+     * Cancel closes the dialog window without taking any action
+     *
+     * @param title the title of the dialog window
+     * @param text the displayed message text
+     */
+    private void showNoKeystoreFoundDialog(String title, String text) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+        builder.setTitle(title);
+        builder.setMessage(text);
+        builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                final AlertDialog.Builder builder2 = new AlertDialog.Builder(CertificateActivity.this);
+
+                builder2.setTitle("Create new Keystore");
+                LayoutInflater inflater = getLayoutInflater();
+                View dialogView = inflater.inflate(R.layout.dialog_keystore_password, null);
+                keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
+                builder2.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        try {
+                            if (ksh.load(keystorepw.getText().toString().toCharArray())) {
+                                Toast toast = Toast.makeText(getApplicationContext(), "Keystore file successfully loaded", Toast.LENGTH_SHORT);
+                                toast.show();
+                                updateList();
+                                ksh.storeKeyStore();
+                            } else {
+                                showErrorDialog("Error", "Keystore file loading failed");
+                            }
+                        } catch (CertificateException e) {
+                            showErrorDialog("Error", "Error loading Keystore:" + e.getMessage());
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            showErrorDialog("Error", "Error loading Keystore:" + e.getMessage());
+                            e.printStackTrace();
+                        } catch (KeyStoreException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                });
+                builder2.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                    }
+                });
+                builder2.setView(dialogView);
+                builder2.create().show();
+            }
+        });
+        builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User cancelled the dialog
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    /**
+     * shows a custom error dialog
+     *
+     * @param title the title of the dialog window
+     * @param text the displayed message text
+     */
+    private void showErrorDialog(String title, String text) {
+
+        AlertDialog.Builder errorDialog = new AlertDialog.Builder(CertificateActivity.this);
+        errorDialog.setTitle(title);
+        errorDialog.setMessage(text);
+        errorDialog.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+            }
+        });
+        errorDialog.create().show();
     }
 
     private void addCertificateToKS(Uri data, String password) {
@@ -211,6 +320,9 @@ public class CertificateActivity extends ActionBarActivity {
         }
     }
 
+    /**
+     * updates the displayed list of known keystores
+     */
     private void updateList() {
         List<X509Certificate> certificates = new ArrayList<X509Certificate>();
         list.clear();
@@ -350,6 +462,9 @@ public class CertificateActivity extends ActionBarActivity {
             case R.id.action_about:
                 Intent aboutIntent = new Intent(getBaseContext(), AboutActivity.class);
                 startActivity(aboutIntent);
+                break;
+            case R.id.action_create_load_keystore:
+                loadKeyStore();
                 break;
             default: break;
         }

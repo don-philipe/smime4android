@@ -71,7 +71,7 @@ public class KeyStoreHandler {
      * creating (not-loading) a keystore
      * @throws CertificateException in case of error with loading certificate from store.
      */
-    public boolean load(char[] passwd) throws CertificateException {
+    public boolean load(char[] passwd) throws CertificateException, IOException {
         this.passwd = passwd;
         try {
             InputStream inputStream = this.context.openFileInput(this.keystorefile);
@@ -79,14 +79,13 @@ public class KeyStoreHandler {
         } catch (FileNotFoundException e) {
             try {
                 this.ks.load(null, this.passwd);
+                return true;
             } catch (IOException e1) {
                 e1.printStackTrace();
             } catch (NoSuchAlgorithmException e1) {
                 e1.printStackTrace();
             }
             return false;
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
