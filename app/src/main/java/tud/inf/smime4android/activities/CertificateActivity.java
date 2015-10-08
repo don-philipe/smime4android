@@ -203,6 +203,37 @@ public class CertificateActivity extends ActionBarActivity {
     }
 
     /**
+     * Delete keystore file.
+     */
+    private void destroyKeyStore() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+
+        if (ksh.exists()){
+            // existing keystore file found
+            builder.setTitle("Destroy Keystore?");
+            LayoutInflater inflater = getLayoutInflater();
+            //View dialogView = inflater.inflate(R.layout.dialog_keystore_password, null);
+            //keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
+            builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    ksh.destroyKeystore();
+                    Toast toast = Toast.makeText(getApplicationContext(), "Keystore file successfully destroyed.", Toast.LENGTH_SHORT);
+                    toast.show();
+                    updateList();
+                }
+            });
+            builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    // User cancelled the dialog
+                }
+            });
+            //builder.setView(dialogView);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+    }
+
+    /**
      * shows the dialog to load an existing keystore file
      * OK loads the file
      * Cancel closes the dialog window without taking any action
@@ -465,6 +496,9 @@ public class CertificateActivity extends ActionBarActivity {
                 break;
             case R.id.action_create_load_keystore:
                 loadKeyStore();
+                break;
+            case R.id.action_destroy_keystore:
+                destroyKeyStore();
                 break;
             default: break;
         }

@@ -3,10 +3,14 @@ package tud.inf.smime4android.logic;
 import android.content.Context;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.security.Key;
 import java.security.KeyStore;
@@ -17,6 +21,8 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 
 import tud.inf.smime4android.R;
@@ -149,6 +155,38 @@ public class KeyStoreHandler {
 
     /**
      *
+     * @param certpem .pem file with at least the certificate for the private key
+     * @param keypem .pem file with private key inside
+     * @throws KeyStoreException if keystore is not initialized
+     */
+    public void importPEM(InputStream certpem, InputStream keypem) throws KeyStoreException {
+        X509Certificate cert = null;
+        try {
+            cert = (X509Certificate) CertificateFactory.getInstance("X.509", BouncyCastleProvider.PROVIDER_NAME)
+                    .generateCertificate(certpem);
+        } catch (CertificateException e) {
+            System.err.println("X.509 certificates not supported with provider " + BouncyCastleProvider.PROVIDER_NAME +
+                    " or parsing problem");
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            System.err.println("provider " + BouncyCastleProvider.PROVIDER_NAME + " not available");
+            e.printStackTrace();
+        }
+        Certificate[] chain = new Certificate[]{cert};
+
+        PrivateKey key = null;
+        try {
+            key = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME)
+                    .getKeyPair((PEMKeyPair) (new PEMParser(new InputStreamReader(keypem))).readObject()).getPrivate();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        this.ks.setKeyEntry(cert.getSubjectDN().getName(), key, null, chain);
+    }
+
+    /**
+     *
      * @param alias for certificate
      * @return a certificate
      * @throws KeyStoreException if keystore is not initialized
@@ -182,5 +220,13 @@ public class KeyStoreHandler {
      */
     public Enumeration<String> getAliases() throws KeyStoreException {
         return this.ks.aliases();
+    }
+
+    /**
+     * Permanently delete keystorefile.
+     * @return true if deletion was successful, false otherwise
+     */
+    public boolean destroyKeystore() {
+        return this.context.deleteFile(this.keystorefile);
     }
 }

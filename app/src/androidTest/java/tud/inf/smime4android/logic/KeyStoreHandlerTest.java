@@ -48,6 +48,8 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
             e.printStackTrace();
         } catch (KeyStoreException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         assertEquals(true, checkFileExistence(targetcontext, ".p12"));

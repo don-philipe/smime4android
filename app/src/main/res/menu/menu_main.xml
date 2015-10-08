@@ -6,4 +6,6 @@
         android:orderInCategory="100" app:showAsAction="never" />
      <item android:id="@+id/action_create_load_keystore" android:title="@string/menu_keystore"
          android:orderInCategory="100" app:showAsAction="never" />
+     <item android:id="@+id/action_destroy_keystore" android:title="@string/menu_keystore_destroy"
+         android:orderInCategory="100" app:showAsAction="never" />
 </menu>
