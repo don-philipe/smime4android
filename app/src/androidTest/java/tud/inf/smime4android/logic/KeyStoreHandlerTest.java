@@ -87,6 +87,32 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         }
     }
 
+    public void testImportPEM() {
+        Context targetcontext = getInstrumentation().getTargetContext();
+        targetcontext.deleteFile(targetcontext.getResources().getString(R.string.ks_filename));
+        char[] ks_passwd = {'p', 'a', 's', 's', 'w', 'd'};
+
+        try {
+            KeyStoreHandler ksh = new KeyStoreHandler(targetcontext);
+            ksh.load(ks_passwd);
+            InputStream incertpem = targetcontext.getResources().openRawResource(R.raw.cert_pem);
+            InputStream inkeypem = targetcontext.getResources().openRawResource(R.raw.key_pem);
+
+            assertEquals(false, ksh.getAliases().hasMoreElements());
+
+            ksh.importPEM(incertpem, inkeypem);
+            ksh.storeKeyStore();
+
+            assertEquals(true, ksh.getAliases().hasMoreElements());
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      *
      */

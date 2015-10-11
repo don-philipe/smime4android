@@ -150,47 +150,57 @@ public class CryptMail {
     /**
      * Decrypt the p7m file with the help of the private key from the local keystore.
      * @param p7m the file to decrypt
+     * @param keyalias alias of the private key, in case of empty String ("") the first private key
+     *                 found in keystore will be taken
      * @param keystorepasswd password for the local keystore
      * @param privkeypasswd password for the private key, can be null of it is not set
      * @return plaintext a byte[0] in case no keystore exists
      * @throws MessagingException in case of an issues with the p7m inputstream
      */
-    public byte[] decrypt(InputStream p7m, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException {
+    public byte[] decrypt(InputStream p7m, String keyalias, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException {
         byte[] decryptedByteData = new byte[0];
         Certificate cert = null;
         PrivateKey privateKey = null;
 
-			KeyStoreHandler ksh = new KeyStoreHandler(this.context);
-            if(ksh.exists()) {
-                ksh.load(keystorepasswd);
+        KeyStoreHandler ksh = new KeyStoreHandler(this.context);
+        if(ksh.exists()) {
+            ksh.load(keystorepasswd);
 
+            if(keyalias.equals("")) {
                 Enumeration<String> aliases = ksh.getAliases();
 
                 while ((cert == null || privateKey == null) && aliases.hasMoreElements()) {
                     String alias = aliases.nextElement();
-                    cert = ksh.getCertificate(alias);
-                    privateKey = ksh.getPrivateKey(alias, privkeypasswd);
-                }
-
-                X509Certificate x509Cert = (X509Certificate) cert;
-
-                MimeBodyPart encryptedMimeBodyPart = new MimeBodyPart(p7m);
-                SMIMEEnveloped enveloped = new SMIMEEnveloped(encryptedMimeBodyPart);
-
-                // look for our recipient identifier
-                RecipientId recipientId = new JceKeyTransRecipientId(x509Cert);
-
-                RecipientInformationStore recipients = enveloped.getRecipientInfos();
-                RecipientInformation recipientInfo = recipients.get(recipientId);
-
-                if (recipientInfo != null) {
-                    JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
-                    rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-                    rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
-                    decryptedByteData = recipientInfo.getContent(rec);
-                    //				decryptedByteData = Base64.decode(decryptedByteData);
+                    if(cert == null)
+                        cert = ksh.getCertificate(alias);
+                    if(privateKey == null)
+                        privateKey = ksh.getPrivateKey(alias, privkeypasswd);
                 }
             }
+            else {
+                cert = ksh.getCertificate(keyalias);
+                privateKey = ksh.getPrivateKey(keyalias, privkeypasswd);
+            }
+
+            X509Certificate x509Cert = (X509Certificate) cert;
+
+            MimeBodyPart encryptedMimeBodyPart = new MimeBodyPart(p7m);
+            SMIMEEnveloped enveloped = new SMIMEEnveloped(encryptedMimeBodyPart);
+
+            // look for our recipient identifier
+            RecipientId recipientId = new JceKeyTransRecipientId(x509Cert);
+
+            RecipientInformationStore recipients = enveloped.getRecipientInfos();
+            RecipientInformation recipientInfo = recipients.get(recipientId);
+
+            if (recipientInfo != null) {
+                JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
+                rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+                rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
+                decryptedByteData = recipientInfo.getContent(rec);
+                //decryptedByteData = Base64.decode(decryptedByteData);
+            }
+        }
 
         return decryptedByteData;
     }

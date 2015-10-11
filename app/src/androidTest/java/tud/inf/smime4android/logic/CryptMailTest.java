@@ -133,10 +133,20 @@ public class CryptMailTest extends InstrumentationTestCase {
         byte[] decrypted192 = new byte[0];
         byte[] decrypted256 = new byte[0];
         try {
-            decrypted128 = cm.decrypt(p7m128, ks_passwd, null);
-            decrypted192 = cm.decrypt(p7m192, ks_passwd, null);
-            decrypted256 = cm.decrypt(p7m256, ks_passwd, null);
+            decrypted128 = cm.decrypt(p7m128, "", ks_passwd, null);
+            decrypted192 = cm.decrypt(p7m192, "", ks_passwd, null);
+            decrypted256 = cm.decrypt(p7m256, "", ks_passwd, null);
         } catch (MessagingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (CMSException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
             e.printStackTrace();
         }
         assertEquals(plaintext.length, decrypted128.length);

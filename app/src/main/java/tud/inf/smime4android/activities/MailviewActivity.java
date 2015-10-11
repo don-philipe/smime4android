@@ -92,7 +92,7 @@ public class MailviewActivity extends ActionBarActivity {
                         }
                         //TODO: make the two passwords changeable
 
-                        byte[] decryptedMessage = dm.decrypt(is, keystorepw.getText().toString().toCharArray(), privkeypw.getText().toString().toCharArray());
+                        byte[] decryptedMessage = dm.decrypt(is, "", keystorepw.getText().toString().toCharArray(), privkeypw.getText().toString().toCharArray());
                         String answer = new String(decryptedMessage);
                         content.setText(answer);
                     } catch (MessagingException e) {
