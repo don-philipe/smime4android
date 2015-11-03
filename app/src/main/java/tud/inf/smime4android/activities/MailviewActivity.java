@@ -19,16 +19,27 @@ import android.widget.Toast;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.mail.smime.SMIMEException;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.KeyStoreException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Properties;
+import java.util.logging.Level;
 
+import javax.mail.BodyPart;
+import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Session;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import tud.inf.smime4android.logic.CryptMail;
 import tud.inf.smime4android.R;
@@ -93,8 +104,41 @@ public class MailviewActivity extends ActionBarActivity {
                         //TODO: make the two passwords changeable
 
                         byte[] decryptedMessage = dm.decrypt(is, "", keystorepw.getText().toString().toCharArray(), privkeypw.getText().toString().toCharArray());
-                        String answer = new String(decryptedMessage);
-                        content.setText(answer);
+                        //String answer = new String(decryptedMessage);
+                        Session session = Session.getDefaultInstance(System.getProperties(), null);
+                        Message msg = new MimeMessage(session, new ByteArrayInputStream(decryptedMessage));
+
+                        String from = msg.getFrom().toString();
+                        String subject = msg.getSubject();
+                        String text = "";
+                        Object contentObject = msg.getContent();
+                        if(contentObject instanceof Multipart){
+                            BodyPart clearTextPart = null;
+                            BodyPart htmlTextPart = null;
+                            Multipart content = (Multipart)contentObject;
+                            int count = content.getCount();
+                            for(int i=0; i<count; i++) {
+                                BodyPart part =  content.getBodyPart(i);
+                                if(part.isMimeType("text/plain")) {
+                                    clearTextPart = part;
+                                    break;
+                                }
+                                else if(part.isMimeType("text/html"))
+                                    htmlTextPart = part;
+                            }
+                            if(clearTextPart!=null)
+                                text = (String) clearTextPart.getContent();
+                            else if (htmlTextPart!=null) {
+                                //String html = (String) htmlTextPart.getContent();
+                                //result = Jsoup.parse(html).text();
+                                text = (String) htmlTextPart.getContent();
+                            }
+                        }
+                        else if (contentObject instanceof String) // a simple text message
+                            text = (String) contentObject;
+                        else // not a mime message
+                            throw new MessagingException();
+                        content.setText(text);
                     } catch (MessagingException e) {
                         showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
                         e.printStackTrace();
