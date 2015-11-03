@@ -21,6 +21,17 @@ import tud.inf.smime4android.R;
  */
 public class CryptMailTest extends InstrumentationTestCase {
 
+    String s = "MIME-Version: 1.0\r" +
+            "\nContent-Type: multipart/mixed; \r" +
+            "\n\tboundary=\"----=_Part_0_260396386.1352904750132\"\r" +
+            "\nContent-Language: en\r" +
+            "\nContent-Description: A mail following the DIRECT project specifications\r" +
+            "\n\r\n------=_Part_0_260396386.1352904750132\r" +
+            "\nContent-Type: text/plain; name=null; charset=us-ascii\r" +
+            "\nContent-Transfer-Encoding: 7bit\r" +
+            "\nContent-Disposition: inline; filename=null\r" +
+            "\n\r\nCiao from vienna\r" +
+            "\n------=_Part_0_260396386.1352904750132--\r\n";
     private final byte[] plaintext = Base64.decode(
         "TUlNRS1WZXJzaW9uOiAxLjANCkNvbnRlbnQtVHlwZTogbXVsdGlwYXJ0L21peGVkOyANCglib3VuZGFye" +
         "T0iLS0tLT1fUGFydF8wXzI2MDM5NjM4Ni4xMzUyOTA0NzUwMTMyIg0KQ29udGVudC1MYW5ndWFnZTogZW" +

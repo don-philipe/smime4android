@@ -108,8 +108,6 @@ public class MailviewActivity extends ActionBarActivity {
                         Session session = Session.getDefaultInstance(System.getProperties(), null);
                         Message msg = new MimeMessage(session, new ByteArrayInputStream(decryptedMessage));
 
-                        String from = msg.getFrom().toString();
-                        String subject = msg.getSubject();
                         String text = "";
                         Object contentObject = msg.getContent();
                         if(contentObject instanceof Multipart){
