@@ -14,10 +14,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.mail.smime.SMIMEException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,21 +23,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.KeyStoreException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.Properties;
-import java.util.logging.Level;
 
 import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Session;
-import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 
 import tud.inf.smime4android.logic.CryptMail;
 import tud.inf.smime4android.R;
@@ -53,7 +46,7 @@ public class MailviewActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_s4);
+        setContentView(R.layout.activity_mailview);
 
 
         // Get the intent that started this activity
@@ -107,7 +100,6 @@ public class MailviewActivity extends ActionBarActivity {
                         //String answer = new String(decryptedMessage);
                         Session session = Session.getDefaultInstance(System.getProperties(), null);
                         Message msg = new MimeMessage(session, new ByteArrayInputStream(decryptedMessage));
-
                         String text = "";
                         Object contentObject = msg.getContent();
                         if(contentObject instanceof Multipart){
