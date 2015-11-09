@@ -36,12 +36,15 @@ import javax.mail.internet.MimeMessage;
 
 import tud.inf.smime4android.logic.CryptMail;
 import tud.inf.smime4android.R;
+import tud.inf.smime4android.logic.KeyStoreHandler;
+import tud.inf.smime4android.logic.NoKeyPresentException;
 
 
 public class MailviewActivity extends ActionBarActivity {
     private EditText privkeypw;
     private EditText pkcs12pw;
     private EditText keystorepw;
+    private KeyStoreHandler ksh = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,103 +77,115 @@ public class MailviewActivity extends ActionBarActivity {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        if(intent.getData()!=null) {
-            //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
+        try {
+            ksh = new KeyStoreHandler(getApplicationContext());
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
 
-            final AlertDialog.Builder builder = new AlertDialog.Builder(MailviewActivity.this);
-            builder.setTitle("Enter Passwords");
-            LayoutInflater inflater = getLayoutInflater();
-            View dialogView = inflater.inflate(R.layout.dialog_decrypt_mail, null);
-            keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
-            privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
-            builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
+        if(ksh.exists()) {
+            if(intent.getData()!=null) {
+                //DecryptVerifyResult result = intent.getParcelableExtra(EXTRA_METADATA);
 
-                    try {
-                        CryptMail dm = new CryptMail(getApplicationContext());
-                        InputStream is = null;
+                final AlertDialog.Builder builder = new AlertDialog.Builder(MailviewActivity.this);
+                builder.setTitle("Enter Passwords");
+                LayoutInflater inflater = getLayoutInflater();
+                View dialogView = inflater.inflate(R.layout.dialog_decrypt_mail, null);
+                keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
+                privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
+                builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+
                         try {
-                            is = getContentResolver().openInputStream(intent.getData());
-                        } catch (FileNotFoundException e) {
+                            CryptMail dm = new CryptMail(getApplicationContext());
+                            InputStream is = null;
+                            try {
+                                is = getContentResolver().openInputStream(intent.getData());
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
+                            }
+                            //TODO: make the two passwords changeable
+
+                            byte[] decryptedMessage = dm.decrypt(is, "", keystorepw.getText().toString().toCharArray(), privkeypw.getText().toString().toCharArray());
+                            //String answer = new String(decryptedMessage);
+                            Session session = Session.getDefaultInstance(System.getProperties(), null);
+                            Message msg = new MimeMessage(session, new ByteArrayInputStream(decryptedMessage));
+                            String text = "";
+                            Object contentObject = msg.getContent();
+                            if(contentObject instanceof Multipart){
+                                BodyPart clearTextPart = null;
+                                BodyPart htmlTextPart = null;
+                                Multipart content = (Multipart)contentObject;
+                                int count = content.getCount();
+                                for(int i=0; i<count; i++) {
+                                    BodyPart part =  content.getBodyPart(i);
+                                    if(part.isMimeType("text/plain")) {
+                                        clearTextPart = part;
+                                        break;
+                                    }
+                                    else if(part.isMimeType("text/html"))
+                                        htmlTextPart = part;
+                                }
+                                if(clearTextPart!=null)
+                                    text = (String) clearTextPart.getContent();
+                                else if (htmlTextPart!=null) {
+                                    //String html = (String) htmlTextPart.getContent();
+                                    //result = Jsoup.parse(html).text();
+                                    text = (String) htmlTextPart.getContent();
+                                }
+                            }
+                            else if (contentObject instanceof String) // a simple text message
+                                text = (String) contentObject;
+                            else // not a mime message
+                                throw new MessagingException();
+                            content.setText(text);
+                        } catch (MessagingException e) {
+                            showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                            e.printStackTrace();
+                        } catch (UnrecoverableKeyException e) {
+                            showErrorDialog("Error", "Either the password for the private key was wrong, or the keystore is broken.");
+                            e.printStackTrace();
+                        } catch (CertificateException e) {
+                            showErrorDialog("Error", "Cannot load a certificates from keystore.");
+                            e.printStackTrace();
+                        } catch (KeyStoreException e) {
+                            showErrorDialog("Error", "No keystore present. You have to initialize one at first.");
+                            e.printStackTrace();
+                        } catch (CMSException e) {
+                            showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
+                            e.printStackTrace();
+                        } catch (NoKeyPresentException e) {
+                            showErrorDialog("Error", "No private key was found in keystore.");
                             e.printStackTrace();
                         }
-                        //TODO: make the two passwords changeable
-
-                        byte[] decryptedMessage = dm.decrypt(is, "", keystorepw.getText().toString().toCharArray(), privkeypw.getText().toString().toCharArray());
-                        //String answer = new String(decryptedMessage);
-                        Session session = Session.getDefaultInstance(System.getProperties(), null);
-                        Message msg = new MimeMessage(session, new ByteArrayInputStream(decryptedMessage));
-                        String text = "";
-                        Object contentObject = msg.getContent();
-                        if(contentObject instanceof Multipart){
-                            BodyPart clearTextPart = null;
-                            BodyPart htmlTextPart = null;
-                            Multipart content = (Multipart)contentObject;
-                            int count = content.getCount();
-                            for(int i=0; i<count; i++) {
-                                BodyPart part =  content.getBodyPart(i);
-                                if(part.isMimeType("text/plain")) {
-                                    clearTextPart = part;
-                                    break;
-                                }
-                                else if(part.isMimeType("text/html"))
-                                    htmlTextPart = part;
-                            }
-                            if(clearTextPart!=null)
-                                text = (String) clearTextPart.getContent();
-                            else if (htmlTextPart!=null) {
-                                //String html = (String) htmlTextPart.getContent();
-                                //result = Jsoup.parse(html).text();
-                                text = (String) htmlTextPart.getContent();
-                            }
-                        }
-                        else if (contentObject instanceof String) // a simple text message
-                            text = (String) contentObject;
-                        else // not a mime message
-                            throw new MessagingException();
-                        content.setText(text);
-                    } catch (MessagingException e) {
-                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
-                        e.printStackTrace();
-                    } catch (UnrecoverableKeyException e) {
-                        showErrorDialog("Error", "Error while decrypting Mail: " + e.getMessage());
-                        e.printStackTrace();
-                    } catch (CertificateException e) {
-                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
-                        e.printStackTrace();
-                    } catch (KeyStoreException e) {
-                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
-                        e.printStackTrace();
-                    } catch (CMSException e) {
-                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        showErrorDialog("Error", "Error while decrypting Mail: "+ e.getMessage());
-                        e.printStackTrace();
                     }
+                });
+                builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                    }
+                });
+                builder.setView(dialogView);
+                AlertDialog dialog = builder.create();
+                dialog.show();
+    /*
+                try {
+                    DecryptMail dm = new DecryptMail(this);
+                    content.setText(dm.decrypt(ksPath, password.toCharArray(), this.getContentResolver().openInputStream(data))
+                            + "\nType:" + type
+                            + "\nIntent:" + intent.toString()
+                            + "\n" + intent.getData().toString());
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
                 }
-            });
-            builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                    // User cancelled the dialog
-                }
-            });
-            builder.setView(dialogView);
-            AlertDialog dialog = builder.create();
-            dialog.show();
-/*
-            try {
-                DecryptMail dm = new DecryptMail(this);
-                content.setText(dm.decrypt(ksPath, password.toCharArray(), this.getContentResolver().openInputStream(data))
-                        + "\nType:" + type
-                        + "\nIntent:" + intent.toString()
-                        + "\n" + intent.getData().toString());
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                */
             }
-            */
         }
-        //}
+        else
+            this.showErrorDialog("Attention", "No keystore present. You have to initialize one at first.");
     }
 
     private void showErrorDialog(String title, String text) {

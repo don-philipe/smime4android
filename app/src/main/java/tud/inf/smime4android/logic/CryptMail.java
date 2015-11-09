@@ -157,7 +157,8 @@ public class CryptMail {
      * @return plaintext a byte[0] in case no keystore exists
      * @throws MessagingException in case of an issues with the p7m inputstream
      */
-    public byte[] decrypt(InputStream p7m, String keyalias, char[] keystorepasswd, char[] privkeypasswd) throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException {
+    public byte[] decrypt(InputStream p7m, String keyalias, char[] keystorepasswd, char[] privkeypasswd)
+            throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException, NoKeyPresentException {
         byte[] decryptedByteData = new byte[0];
         Certificate cert = null;
         PrivateKey privateKey = null;
@@ -182,23 +183,28 @@ public class CryptMail {
                 privateKey = ksh.getPrivateKey(keyalias, privkeypasswd);
             }
 
-            X509Certificate x509Cert = (X509Certificate) cert;
+            if(privateKey == null)
+                throw new NoKeyPresentException("No key bind on alias " + keyalias);
+            else {
 
-            MimeBodyPart encryptedMimeBodyPart = new MimeBodyPart(p7m);
-            SMIMEEnveloped enveloped = new SMIMEEnveloped(encryptedMimeBodyPart);
+                X509Certificate x509Cert = (X509Certificate) cert;
 
-            // look for our recipient identifier
-            RecipientId recipientId = new JceKeyTransRecipientId(x509Cert);
+                MimeBodyPart encryptedMimeBodyPart = new MimeBodyPart(p7m);
+                SMIMEEnveloped enveloped = new SMIMEEnveloped(encryptedMimeBodyPart);
 
-            RecipientInformationStore recipients = enveloped.getRecipientInfos();
-            RecipientInformation recipientInfo = recipients.get(recipientId);
+                // look for our recipient identifier
+                RecipientId recipientId = new JceKeyTransRecipientId(x509Cert);
 
-            if (recipientInfo != null) {
-                JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
-                rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-                rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
-                decryptedByteData = recipientInfo.getContent(rec);
-                //decryptedByteData = Base64.decode(decryptedByteData);
+                RecipientInformationStore recipients = enveloped.getRecipientInfos();
+                RecipientInformation recipientInfo = recipients.get(recipientId);
+
+                if (recipientInfo != null) {
+                    JceKeyTransRecipient rec = new JceKeyTransEnvelopedRecipient(privateKey);
+                    rec.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+                    rec.setContentProvider(BouncyCastleProvider.PROVIDER_NAME);
+                    decryptedByteData = recipientInfo.getContent(rec);
+                    //decryptedByteData = Base64.decode(decryptedByteData);
+                }
             }
         }
 
