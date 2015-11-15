@@ -24,6 +24,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 import tud.inf.smime4android.R;
 
@@ -136,14 +138,23 @@ public class KeyStoreHandler {
             KeyStore pkcs12 = KeyStore.getInstance("PKCS12", BouncyCastleProvider.PROVIDER_NAME);
             pkcs12.load(p12, pkcs12Passwd);
             Enumeration<String> aliases = pkcs12.aliases();
+            HashMap<Certificate, String> certaliasmap = new HashMap<Certificate, String>();
+            Key privKey = null;
+            String privKeyAlias = "";
             while(aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
-                this.ks.setCertificateEntry(alias, pkcs12.getCertificate(alias));
-                this.ks.setKeyEntry(alias,
-                        pkcs12.getKey(alias, privKeyPasswd),
-                        privKeyPasswd,
-                        new Certificate[]{pkcs12.getCertificate(alias)});
+                certaliasmap.put(pkcs12.getCertificate(alias), alias);
+                privKey = pkcs12.getKey(alias, privKeyPasswd);
+                if(privKey != null)
+                    privKeyAlias = alias;
             }
+            Certificate privKeyCert = null;
+            for(Certificate c : certaliasmap.keySet()) {
+                this.ks.setCertificateEntry(certaliasmap.get(c), c);
+                if(certaliasmap.get(c).equals(privKeyAlias))
+                    privKeyCert = c;
+            }
+            this.ks.setKeyEntry(privKeyAlias, privKey, privKeyPasswd, new Certificate[]{privKeyCert});
         } catch (NoSuchProviderException e) {
             e.printStackTrace();
         } catch (CertificateException e) {

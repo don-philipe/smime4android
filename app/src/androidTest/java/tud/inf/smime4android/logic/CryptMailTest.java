@@ -159,6 +159,8 @@ public class CryptMailTest extends InstrumentationTestCase {
             e.printStackTrace();
         } catch (KeyStoreException e) {
             e.printStackTrace();
+        } catch (NoKeyPresentException e) {
+            e.printStackTrace();
         }
         assertEquals(plaintext.length, decrypted128.length);
         assertEquals(new String(plaintext), new String(decrypted128));
