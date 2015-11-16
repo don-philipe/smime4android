@@ -236,21 +236,13 @@ public class KeyStoreHandler {
     /**
      * Permanently delete keystorefile.
      * @return true if deletion was successful, false otherwise
+     * @throws KeyStoreException in case the keystore is not initialized/loaded
      */
-    public boolean destroyKeystore() {
+    public boolean destroyKeystore() throws KeyStoreException {
         Enumeration<String> aliases = null;
-        try {
-            aliases = getAliases();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-        while(aliases.hasMoreElements()) {
-            try {
-                this.ks.deleteEntry(aliases.nextElement());
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
-            }
-        }
+        aliases = getAliases();
+        while(aliases.hasMoreElements())
+            this.ks.deleteEntry(aliases.nextElement());
         return this.context.deleteFile(this.keystorefile);
     }
 }

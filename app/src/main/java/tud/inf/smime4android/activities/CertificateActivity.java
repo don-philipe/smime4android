@@ -252,13 +252,26 @@ public class CertificateActivity extends ActionBarActivity {
             //keystorepw = (EditText) dialogView.findViewById(R.id.keystore_password);
             builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
-                    ksh.destroyKeystore();
-                    SharedPreferences.Editor editor = settings.edit();
-                    editor.remove(ksPasswordIdentifier);
-                    editor.commit(); // commit setting persistently
-                    Toast toast = Toast.makeText(getApplicationContext(), "Keystore file successfully destroyed.", Toast.LENGTH_SHORT);
-                    toast.show();
-                    updateList();
+                    boolean keystoreloaded = true;
+                    try {
+                        ksh.destroyKeystore();
+                    }
+                    catch(KeyStoreException ksex) {
+                        final AlertDialog.Builder builder2 = new AlertDialog.Builder(CertificateActivity.this);
+                        builder2.setTitle("No Keystore loaded.");
+                        builder2.setPositiveButton(R.string.dialog_ok, null);
+                        AlertDialog dialog2 = builder2.create();
+                        dialog2.show();
+                        keystoreloaded = false;
+                    }
+                    if(keystoreloaded) {
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.remove(ksPasswordIdentifier);
+                        editor.commit(); // commit setting persistently
+                        Toast toast = Toast.makeText(getApplicationContext(), "Keystore file successfully destroyed.", Toast.LENGTH_SHORT);
+                        toast.show();
+                        updateList();
+                    }
                 }
             });
             builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
