@@ -101,7 +101,7 @@ public class CertificateActivity extends ActionBarActivity {
                 if (intent.getType().equals("application/x-pkcs12")) {
                     importPKCS12(intent);
                 }
-                else if (intent.getType().equals("application/x-pem-file")) {
+                else if (intent.getType().equals("application/x-pem-file")|| intent.getType().equals("application/x-x509-ca-cert")) {
                     importPEM(intent);
                 }
                 else {
@@ -129,7 +129,9 @@ public class CertificateActivity extends ActionBarActivity {
         }
         String inputStreamString = new Scanner(is,"UTF-8").useDelimiter("\\A").next();
         String [] stringParts = inputStreamString.split("-----END RSA PRIVATE KEY-----");
-        keypem = new ByteArrayInputStream(stringParts[0].getBytes(StandardCharsets.UTF_8));
+        String keypemstring = null;
+        keypemstring = stringParts[0] + "-----END RSA PRIVATE KEY-----";
+        keypem = new ByteArrayInputStream(keypemstring.getBytes(StandardCharsets.UTF_8));
         certpem = new ByteArrayInputStream(stringParts[1].getBytes(StandardCharsets.UTF_8));
         try {
             ksh.importPEM(certpem, keypem);
