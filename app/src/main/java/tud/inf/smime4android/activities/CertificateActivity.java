@@ -31,6 +31,7 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -39,6 +40,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
 import java.security.NoSuchProviderException;
@@ -54,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Scanner;
 
 import tud.inf.smime4android.R;
 import tud.inf.smime4android.logic.KeyStoreHandler;
@@ -99,6 +102,7 @@ public class CertificateActivity extends ActionBarActivity {
                     importPKCS12(intent);
                 }
                 else if (intent.getType().equals("application/x-pem-file")) {
+                    importPEM(intent);
                 }
                 else {
                     //unknow file format
@@ -112,6 +116,26 @@ public class CertificateActivity extends ActionBarActivity {
         listView.setAdapter(adapter);
         updateList();
         registerForContextMenu(findViewById(R.id.certificates_listView));
+    }
+
+    private void importPEM(Intent intent) {
+        InputStream is = null;
+        InputStream certpem = null;
+        InputStream keypem = null;
+        try {
+            is = getContentResolver().openInputStream(intent.getData());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        String inputStreamString = new Scanner(is,"UTF-8").useDelimiter("\\A").next();
+        String [] stringParts = inputStreamString.split("-----END RSA PRIVATE KEY-----");
+        keypem = new ByteArrayInputStream(stringParts[0].getBytes(StandardCharsets.UTF_8));
+        certpem = new ByteArrayInputStream(stringParts[1].getBytes(StandardCharsets.UTF_8));
+        try {
+            ksh.importPEM(certpem, keypem);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
