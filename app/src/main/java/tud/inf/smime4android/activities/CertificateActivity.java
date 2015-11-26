@@ -95,7 +95,14 @@ public class CertificateActivity extends ActionBarActivity {
                 //create one first
                 createNewKeystore("Attention", "A Keystore is needed for importing. Create new Keystore?", intent);
             } else {
-                importPKCS12(intent);
+                if (intent.getType().equals("application/x-pkcs12")) {
+                    importPKCS12(intent);
+                }
+                else if (intent.getType().equals("application/x-pem-file")) {
+                }
+                else {
+                    //unknow file format
+                }
             }
         }
 
