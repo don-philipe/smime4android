@@ -100,7 +100,7 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
 
             assertEquals(false, ksh.getAliases().hasMoreElements());
 
-            ksh.importPEM(incertpem, inkeypem);
+            ksh.importPEM(incertpem, inkeypem, "".toCharArray());
             ksh.storeKeyStore();
 
             assertEquals(true, ksh.getAliases().hasMoreElements());
@@ -109,6 +109,8 @@ public class KeyStoreHandlerTest extends InstrumentationTestCase {
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
     }

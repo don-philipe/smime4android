@@ -3,9 +3,12 @@ package tud.inf.smime4android.logic;
 import android.content.Context;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -168,9 +171,11 @@ public class KeyStoreHandler {
      *
      * @param certpem .pem file with at least the certificate for the private key
      * @param keypem .pem file with private key inside
+     * @param keyPasswd password in case keypem is encrypted, if no password is required this argument will be ignored
      * @throws KeyStoreException if keystore is not initialized
+     * @throws IllegalArgumentException in case keypem is encrypted and no or empty password is passed to method
      */
-    public void importPEM(InputStream certpem, InputStream keypem) throws KeyStoreException {
+    public void importPEM(InputStream certpem, InputStream keypem, char[] keyPasswd) throws KeyStoreException, IllegalArgumentException {
         X509Certificate cert = null;
         try {
             cert = (X509Certificate) CertificateFactory.getInstance("X.509", BouncyCastleProvider.PROVIDER_NAME)
@@ -187,8 +192,22 @@ public class KeyStoreHandler {
 
         PrivateKey key = null;
         try {
+            PEMKeyPair pemKeyPair;
+            PEMParser pemParser = new PEMParser(new InputStreamReader(keypem));
+            if(pemParser.readObject() instanceof PEMEncryptedKeyPair) {
+                if(keyPasswd != null && !keyPasswd.equals("")) {
+                    PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(keyPasswd);
+                    pemKeyPair = ((PEMEncryptedKeyPair) pemParser.readObject()).decryptKeyPair(decProv);
+                }
+                else {
+                    throw new IllegalArgumentException("Missing password for encrypted key in pem file.");
+                }
+            }
+            else {
+                pemKeyPair = (PEMKeyPair) pemParser.readObject();
+            }
             key = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME)
-                    .getKeyPair((PEMKeyPair) (new PEMParser(new InputStreamReader(keypem))).readObject()).getPrivate();
+                    .getKeyPair(pemKeyPair).getPrivate();
         } catch (IOException e) {
             e.printStackTrace();
         }

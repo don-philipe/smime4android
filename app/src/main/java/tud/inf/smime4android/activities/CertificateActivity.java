@@ -134,8 +134,10 @@ public class CertificateActivity extends ActionBarActivity {
         keypem = new ByteArrayInputStream(keypemstring.getBytes(StandardCharsets.UTF_8));
         certpem = new ByteArrayInputStream(stringParts[1].getBytes(StandardCharsets.UTF_8));
         try {
-            ksh.importPEM(certpem, keypem);
+            ksh.importPEM(certpem, keypem, "".toCharArray());
         } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
     }
