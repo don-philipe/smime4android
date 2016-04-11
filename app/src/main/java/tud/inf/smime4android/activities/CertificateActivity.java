@@ -139,6 +139,7 @@ public class CertificateActivity extends ActionBarActivity {
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
+            showErrorDialog(getString(R.string.dialog_error_pem),e.toString());
         }
     }
 

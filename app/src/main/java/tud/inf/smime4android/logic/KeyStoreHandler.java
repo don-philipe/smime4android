@@ -196,8 +196,9 @@ public class KeyStoreHandler {
             PEMParser pemParser = new PEMParser(new InputStreamReader(keypem));
             if(pemParser.readObject() instanceof PEMEncryptedKeyPair) {
                 if(keyPasswd != null && !keyPasswd.equals("")) {
-                    PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(keyPasswd);
-                    pemKeyPair = ((PEMEncryptedKeyPair) pemParser.readObject()).decryptKeyPair(decProv);
+//                    PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(keyPasswd);
+//                    pemKeyPair = ((PEMEncryptedKeyPair) pemParser.readObject()).decryptKeyPair(decProv);
+                    throw new IllegalArgumentException("Encrypted PEM is not supported yet.");
                 }
                 else {
                     throw new IllegalArgumentException("Missing password for encrypted key in pem file.");

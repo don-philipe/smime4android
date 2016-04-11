@@ -25,7 +25,9 @@
     <string name="dialog_pkcs12_password">PKCS12 password</string>
     <string name="dialog_privatekey_password">private key password</string>
     <string name="dialog_error_message">Error.</string>
-
+    <string name="dialog_error_pem">Error opening PEM</string>
+    <string name="dialog_error_pem_noencrypt_message">"Encrypted PEM is not supported yet."</string>
+    <string name="dialog_error_pem_missingpw_message">"Missing password for encrypted key in pem file."</string>
 
     <string name="about_header">About</string>
     <string name="about_content">blabla</string>
