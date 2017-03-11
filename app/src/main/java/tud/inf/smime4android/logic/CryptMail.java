@@ -20,19 +20,14 @@ import org.bouncycastle.util.encoders.Base64;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.SequenceInputStream;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
@@ -42,7 +37,10 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 
+import javax.mail.BodyPart;
+import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.internet.InternetHeaders;
 import javax.mail.internet.MimeBodyPart;
@@ -171,12 +169,12 @@ public class CryptMail {
      * @return plaintext a byte[0] in case no keystore exists
      * @throws MessagingException in case of an issues with the p7m inputstream
      */
-    public byte[] decrypt(InputStream p7m, String keyalias, char[] keystorepasswd, char[] privkeypasswd)
-            throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException, NoKeyPresentException {
+    public String decrypt(InputStream p7m, String keyalias, char[] keystorepasswd, char[] privkeypasswd)
+            throws MessagingException, KeyStoreException, CertificateException, IOException, UnrecoverableKeyException, CMSException, NoKeyPresentException, NoSuchAlgorithmException {
         byte[] decryptedByteData = new byte[0];
         Certificate cert = null;
         PrivateKey privateKey = null;
-
+//        keyalias = "";
         KeyStoreHandler ksh = new KeyStoreHandler(this.context);
         if(ksh.exists()) {
             ksh.load(keystorepasswd);
@@ -189,12 +187,25 @@ public class CryptMail {
                     if(cert == null)
                         cert = ksh.getCertificate(alias);
                     if(privateKey == null) //TODO hier den KeyEntry raussuchen
-                        privateKey = ksh.getPrivateKey(alias, privkeypasswd);
+                        privateKey = (PrivateKey) ksh.getKey(alias, privkeypasswd);
                 }
             }
             else {
-                cert = ksh.getCertificate(keyalias);
-                privateKey = ksh.getPrivateKey(keyalias, privkeypasswd);
+//                cert = ksh.getCertificate(keyalias);
+//                privateKey = ksh.getPrivateKey(keyalias, privkeypasswd);
+
+
+                Enumeration<String> aliases = ksh.getAliases();
+                String s = "";
+                while((cert == null || privateKey == null) && aliases.hasMoreElements()) {
+                    String alias = aliases.nextElement();
+                    cert = ksh.getCertificate(alias);
+                    try {
+                        privateKey = (PrivateKey) ksh.getKey(alias, privkeypasswd);
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
             if(privateKey == null)
@@ -252,7 +263,38 @@ public class CryptMail {
             }
         }
 
-        return decryptedByteData;
+        Session session = Session.getDefaultInstance(System.getProperties(), null);
+        Message msg = new MimeMessage(session, new ByteArrayInputStream(decryptedByteData));
+        String text = "";
+        Object contentObject = msg.getContent();
+        if(contentObject instanceof Multipart){
+            BodyPart clearTextPart = null;
+            BodyPart htmlTextPart = null;
+            Multipart content = (Multipart)contentObject;
+            int count = content.getCount();
+            for(int i=0; i<count; i++) {
+                BodyPart part =  content.getBodyPart(i);
+                if(part.isMimeType("text/plain")) {
+                    clearTextPart = part;
+                    break;
+                }
+                else if(part.isMimeType("text/html"))
+                    htmlTextPart = part;
+            }
+            if(clearTextPart!=null)
+                text = (String) clearTextPart.getContent();
+            else if (htmlTextPart!=null) {
+                //String html = (String) htmlTextPart.getContent();
+                //result = Jsoup.parse(html).text();
+                text = (String) htmlTextPart.getContent();
+            }
+        }
+        else if (contentObject instanceof String) // a simple text message
+            text = (String) contentObject;
+        else // not a mime message
+            throw new MessagingException();
+
+        return text;
     }
 
     public boolean hasHeaders(byte[] content) throws FileNotFoundException{

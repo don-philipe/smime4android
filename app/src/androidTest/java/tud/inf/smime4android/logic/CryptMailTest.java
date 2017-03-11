@@ -144,9 +144,9 @@ public class CryptMailTest extends InstrumentationTestCase {
         byte[] decrypted192 = new byte[0];
         byte[] decrypted256 = new byte[0];
         try {
-            decrypted128 = cm.decrypt(p7m128, "", ks_passwd, null);
-            decrypted192 = cm.decrypt(p7m192, "", ks_passwd, null);
-            decrypted256 = cm.decrypt(p7m256, "", ks_passwd, null);
+            decrypted128 = cm.decrypt(p7m128, "", ks_passwd, null, keyAlias);
+            decrypted192 = cm.decrypt(p7m192, "", ks_passwd, null, keyAlias);
+            decrypted256 = cm.decrypt(p7m256, "", ks_passwd, null, keyAlias);
         } catch (MessagingException e) {
             e.printStackTrace();
         } catch (IOException e) {

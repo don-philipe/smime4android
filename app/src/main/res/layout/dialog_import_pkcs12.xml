@@ -14,14 +14,14 @@
         android:layout_marginBottom="16dp"
         android:hint="@string/dialog_pkcs12_password" />
 
-    <EditText
-        android:id="@+id/privatekey_password"
-        android:inputType="textPassword"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:layout_marginLeft="4dp"
-        android:layout_marginRight="4dp"
-        android:layout_marginBottom="16dp"
-        android:hint="@string/dialog_privatekey_password" />
+    <!--<EditText-->
+        <!--android:id="@+id/privatekey_password"-->
+        <!--android:inputType="textPassword"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="4dp"-->
+        <!--android:layout_marginLeft="4dp"-->
+        <!--android:layout_marginRight="4dp"-->
+        <!--android:layout_marginBottom="16dp"-->
+        <!--android:hint="@string/dialog_privatekey_password" />-->
 </LinearLayout>

@@ -3,12 +3,10 @@ package tud.inf.smime4android.logic;
 import android.content.Context;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,9 +24,10 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.List;
 
 import tud.inf.smime4android.R;
 
@@ -147,7 +146,9 @@ public class KeyStoreHandler {
             while(aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
                 certaliasmap.put(pkcs12.getCertificate(alias), alias);
-                privKey = pkcs12.getKey(alias, privKeyPasswd);
+                if (pkcs12.getKey(alias, privKeyPasswd) != null){
+                    privKey = pkcs12.getKey(alias, privKeyPasswd);
+                }
                 if(privKey != null)
                     privKeyAlias = alias;
             }
@@ -167,6 +168,26 @@ public class KeyStoreHandler {
         }
     }
 
+    public List<String> getKeyAliases(){
+        List<String> keys = new ArrayList<String>();
+        String alias;
+        try {
+            Enumeration<String> aliases = this.ks.aliases();
+            while (aliases.hasMoreElements()){
+                alias = aliases.nextElement();
+                if (this.ks.getKey(alias,"".toCharArray())!=null){
+                    keys.add(alias);
+                }
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return keys;
+    }
     /**
      *
      * @param certpem .pem file with at least the certificate for the private key
@@ -225,6 +246,17 @@ public class KeyStoreHandler {
     public Certificate getCertificate(String alias) throws KeyStoreException {
         return this.ks.getCertificate(alias);
     }
+
+    /**
+     *
+     * @param alias for certificate
+     * @return a certificate
+     * @throws KeyStoreException if keystore is not initialized
+     */
+    public Key getKey(String alias, char[] passwd) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
+        return this.ks.getKey(alias, passwd);
+    }
+
 
     /**
      *

@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Base64;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -32,17 +31,15 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-
-import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
@@ -51,7 +48,6 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -61,6 +57,8 @@ import java.util.Scanner;
 import tud.inf.smime4android.R;
 import tud.inf.smime4android.logic.KeyStoreHandler;
 import tud.inf.smime4android.logic.StableArrayAdapter;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 public class CertificateActivity extends ActionBarActivity {
@@ -131,8 +129,8 @@ public class CertificateActivity extends ActionBarActivity {
         String [] stringParts = inputStreamString.split("-----END RSA PRIVATE KEY-----");
         String keypemstring = null;
         keypemstring = stringParts[0] + "-----END RSA PRIVATE KEY-----";
-        keypem = new ByteArrayInputStream(keypemstring.getBytes(StandardCharsets.UTF_8));
-        certpem = new ByteArrayInputStream(stringParts[1].getBytes(StandardCharsets.UTF_8));
+        keypem = new ByteArrayInputStream(keypemstring.getBytes(UTF_8));
+        certpem = new ByteArrayInputStream(stringParts[1].getBytes(UTF_8));
         try {
             ksh.importPEM(certpem, keypem, "".toCharArray());
         } catch (KeyStoreException e) {
@@ -326,14 +324,14 @@ public class CertificateActivity extends ActionBarActivity {
      */
     private void importPKCS12 (final Intent intent) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
-        builder.setTitle("Enter password for private Key");
+        builder.setTitle("Enter PKCS12 password");
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_import_pkcs12, null);
         pkcs12pw = (EditText) dialogView.findViewById(R.id.pkcs12_password);
-        privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
+//        privkeypw = (EditText) dialogView.findViewById(R.id.privatekey_password);
         builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
-                String privateKeyPassword = privkeypw.getText().toString();
+//                String privateKeyPassword = privkeypw.getText().toString();
                 String pkcs12Password = pkcs12pw.getText().toString();
 
                 InputStream is = null;
@@ -345,7 +343,7 @@ public class CertificateActivity extends ActionBarActivity {
 
                 try {
                     ksh.load(settings.getString(ksPasswordIdentifier, "").toCharArray());
-                    ksh.importPKCS12(is, pkcs12Password.toCharArray(), privateKeyPassword.toCharArray());
+                    ksh.importPKCS12(is, pkcs12Password.toCharArray(), null);
                     ksh.storeKeyStore();
                 } catch (KeyStoreException e) {
                     showErrorDialog("Error", "Error importing PKCS12: " + e.getMessage());
@@ -393,44 +391,6 @@ public class CertificateActivity extends ActionBarActivity {
         errorDialog.create().show();
     }
 
-    private void addCertificateToKS(Uri data, String password) {
-
-        boolean accessToKeyPair;
-        KeyPair keyPair = null;
-        List<X509Certificate> certificates = new ArrayList<X509Certificate>();
-
-        try {
-            keyPair = loadKeysFromFile(getFIS(this, data), password);
-            accessToKeyPair = true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            //pw falsch
-            Toast toast = Toast.makeText(getApplicationContext(), "Wrong password", Toast.LENGTH_SHORT);
-            toast.show();
-            accessToKeyPair = false;
-        }
-
-        if (accessToKeyPair) {
-            try {
-                certificates = loadX509CertificateFromFile(getFIS(this, data));
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (CertificateException e) {
-                e.printStackTrace();
-            }
-
-            Certificate[] certArray = new Certificate[certificates.size()];
-
-            for (int i = 0; i < certificates.size(); i++) {
-                certArray[i] = certificates.get(i);
-            }
-//            ksh.addPrivKeyAndCertificate("privkeypw", certArray, keyPair.getPrivate(), password.toCharArray());
-
-            updateList();
-            // TODO Add to list
-        }
-    }
-
     /**
      * updates the displayed list of known keystores
      */
@@ -442,7 +402,10 @@ public class CertificateActivity extends ActionBarActivity {
             Enumeration<String> aliases = ksh.getAliases();
             while (aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
-                list.add(alias);
+                if (ksh.getKey(alias, "".toCharArray())!=null)
+                {
+                    list.add(alias);
+                }
             }
 
             //certificates = ksh.getAllCertificates();
@@ -450,10 +413,13 @@ public class CertificateActivity extends ActionBarActivity {
             //    e.printStackTrace();
         } catch (KeyStoreException e) {
             e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         }
         //for (int i = 0; i<certificates.size(); i++){
         //list.add( findCName(certificates.get(i).getSubjectDN().getName().toString()));
-        //}
         adapter.notifyDataSetChanged();
     }
 
@@ -477,17 +443,39 @@ public class CertificateActivity extends ActionBarActivity {
     @Override
     public boolean onContextItemSelected(final MenuItem item) {
         final AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        switch (item.getItemId()) {/*
-            case R.id.menu_context_details: {
-//                ArrayList<X509Certificate> tempList = certificateList.get(info.position);
-//                callCertificateViewerActivity(tempList.get(tempList.size() - 1));
-                String alias = list.get(info.position);
-                String cert = "";
+        String alias = list.get(info.position);
+        switch (item.getItemId()) {
+//            case R.id.menu_context_rename: {
+//                Certificate certificate;
 //                try {
-//                   cert = ksh.getSingleCert()
+//                    certificate = ksh.getCertificate(alias);
 //                } catch (KeyStoreException e) {
 //                    e.printStackTrace();
 //                }
+//                try {
+//                    ksh.deleteCertificate(alias);
+//                } catch (KeyStoreException e) {
+//                    e.printStackTrace();
+//                }
+//
+//                //ksh.addCertificate("", certificate);
+//            }
+//            break;
+            case R.id.menu_context_details: {
+//                ArrayList<X509Certificate> tempList = certificateList.get(info.position);
+//                callCertificateViewerActivity(tempList.get(tempList.size() - 1));
+                String cert = "";
+                Certificate certificate;
+                try {
+                    Enumeration<String> aliases = ksh.getAliases();
+                    while (aliases.hasMoreElements()) {
+                        cert = aliases.nextElement();
+                    }
+                   certificate = ksh.getCertificate(cert);
+                    callCertificateViewerActivity((X509Certificate)certificate);
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                }
 
                 Context context = getApplicationContext();
 
@@ -500,32 +488,32 @@ public class CertificateActivity extends ActionBarActivity {
             }
 
             break;
-            case R.id.menu_context_delete: {
-                AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
-                builder.setMessage(R.string.dialog_delete_item_text)
-                        .setTitle(R.string.dialog_delete_item_title);
-                builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-//                      ksh.removeCertificate("privkeypw");
-                        //TODO hardcoded, find out privkeypw and delete it
-                        updateList();
-
-                    }
-                });
-                builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked button
-                    }
-                });
-
-
-                builder.create().show();
-
-            }
-            break;
+//            case R.id.menu_context_delete: {
+//                AlertDialog.Builder builder = new AlertDialog.Builder(CertificateActivity.this);
+//                builder.setMessage(R.string.dialog_delete_item_text)
+//                        .setTitle(R.string.dialog_delete_item_title);
+//                builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+//                    public void onClick(DialogInterface dialog, int id) {
+////                      ksh.removeCertificate("privkeypw");
+//                        //TODO hardcoded, find out privkeypw and delete it
+//                        updateList();
+//
+//                    }
+//                });
+//                builder.setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+//                    public void onClick(DialogInterface dialog, int id) {
+//                        // User clicked button
+//                    }
+//                });
+//
+//
+//                builder.create().show();
+//
+//            }
+//            break;
             default:
                 return super.onContextItemSelected(item);
-        */}
+        }
         return false;
     }
 
@@ -585,29 +573,6 @@ public class CertificateActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    public static String readTextFromUri(Context context, Uri outputUri)
-            throws IOException {
-
-        byte[] decryptedMessage;
-        {
-            InputStream in = context.getContentResolver().openInputStream(outputUri);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buf = new byte[256];
-            int read;
-            while ((read = in.read(buf)) > 0) {
-                out.write(buf, 0, read);
-            }
-            in.close();
-            out.close();
-            decryptedMessage = out.toByteArray();
-        }
-
-        String plaintext;
-        plaintext = Base64.encodeToString(decryptedMessage, Base64.DEFAULT);
-        return plaintext;
-
     }
 
     public static FileInputStream getFIS(Context context, Uri uri) throws FileNotFoundException {
